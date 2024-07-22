@@ -132,6 +132,66 @@ public:
 	}
 };
 
+class IP_bottom{
+public:
+	uint32_t ival;
+	constexpr IP_bottom(uint32_t defval): ival(defval){};
+	using T = uint32_t;
+	static constexpr std::size_t MAX_STRLEN = 4*4;
+
+
+	std::size_t repr(char ret[MAX_STRLEN]) const
+		{
+		static constexpr auto str = CStrcat(
+				CString("% "),
+				CStr<3>(3),
+				CString("u.% "),
+				CStr<3>(3),
+				CString("u.% "),
+				CStr<3>(3),
+				CString("u.% "),
+				CStr<3>(3),
+				CString("u\0"));
+		snprintf(ret,MAX_STRLEN,str.data(),
+				0xFF&ival,
+				0xFF&(ival>>8),
+				0xFF&(ival>>16),
+				0xFF&(ival>>24));
+		return strlen(ret);
+	}
+	void set_repr(uint32_t &out, const char* str)
+	{
+		  char * pEnd;
+		  out = 0;
+		  out |= strtol(str,&pEnd,10);
+		  if(*pEnd == '.') pEnd++;
+		  out |= strtol(pEnd,&pEnd,10)<<8;
+		  if(*pEnd == '.') pEnd++;
+		  out |= strtol(pEnd,&pEnd,10)<<16;
+		  if(*pEnd == '.') pEnd++;
+		  out |= strtol(pEnd,&pEnd,10)<<24;
+	}
+};
+template<class CRTP>
+class IP : public IP_bottom{
+public:
+	constexpr IP(uint32_t defval): IP_bottom(defval){};
+	using T = uint32_t;
+	static constexpr std::size_t MAX_STRLEN = IP_bottom::MAX_STRLEN;
+
+	bool set_repr(const char* str)
+	{
+		uint32_t tmpval;
+		IP_bottom::set_repr(tmpval,str);
+		if(CRTP::validate(tmpval))
+		{
+			IP_bottom::ival = tmpval;
+			return true;
+		}
+		return false;
+	}
+};
+
 template<class CRTP, std::size_t LEN>
 class Str {
 public:
@@ -198,7 +258,7 @@ private:
 	};
 
 	struct [[gnu::packed]] Header {
-		static constexpr uint32_t magic_val = 0x4E797501;
+		static constexpr uint32_t magic_val = 0x4E797502;
 		uint32_t magic = magic_val;
 		uint8_t entries[0];
 	};

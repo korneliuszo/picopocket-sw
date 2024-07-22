@@ -8,6 +8,8 @@
 #include "hardware/structs/clocks.h"
 #include "tusb.h"
 #include "device/usbd_pvt.h"
+#include "network_l2.hpp"
+
 #include "config.hpp"
 
 constexpr uint32_t PICO_Freq=380; //PM_SYS_CLK;
@@ -25,9 +27,12 @@ int main(void)
 
 	tusb_init();
 
+	network_init();
+
 	while(1)
 	{
 		tud_task(); // tinyusb device task
+		network_poll();
 	}
 
 	return 0;

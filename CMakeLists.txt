@@ -12,6 +12,7 @@ add_executable(picopocket-sw
 	main.cpp
 	usb_descriptors.cpp
 	usb_config.cpp
+	network_l2.cpp
 )
 
 pico_set_program_name(picopocket-sw "picopocket-sw")
@@ -25,6 +26,8 @@ target_link_libraries(picopocket-sw PRIVATE
 	hardware_flash
 	tinyusb_device
 	tinyusb_board
+	pico_cyw43_arch_none
+	pico_lwip_nosys
 )
 
 target_include_directories(picopocket-sw PRIVATE ${CMAKE_CURRENT_LIST_DIR})

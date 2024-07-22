@@ -72,6 +72,12 @@ SECTIONS
     .rodata : {
         /* segments not marked as .flashdata are instead pulled into .data (in RAM) to avoid accidental flash accesses */
         *(SORT_BY_ALIGNMENT(SORT_BY_NAME(.flashdata*)))
+        *(SORT_BY_ALIGNMENT(SORT_BY_NAME(
+        	.rodata.w43439A0_7_95_49_00_combined
+        )))
+        *(SORT_BY_ALIGNMENT(SORT_BY_NAME(
+        	.rodata.wifi_nvram_4343
+        )))
         . = ALIGN(4);
     } > FLASH
 
