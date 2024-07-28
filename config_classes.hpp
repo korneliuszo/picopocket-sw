@@ -439,6 +439,8 @@ public:
 	static constexpr std::size_t MAX_MAX_STRLEN =
 			MAX_MAX_STRLEN_fn(typename Basic_Config::Ea{});
 
+	using Flash_Saved=Saved;
+
 	struct ConfigFields {
 		const uint16_t uid;
 		const uint16_t parent_uid;
