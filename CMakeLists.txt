@@ -13,6 +13,10 @@ add_executable(picopocket-sw
 	usb_descriptors.cpp
 	usb_config.cpp
 	network_l2.cpp
+
+target_compile_definitions(picopocket-sw PRIVATE
+	PICO_PANIC_NO_STRINGS_ON_TARGET
+#	PICO_PANIC_FUNCTION=
 )
 
 pico_set_program_name(picopocket-sw "picopocket-sw")
