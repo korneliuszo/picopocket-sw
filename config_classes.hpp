@@ -405,6 +405,12 @@ class BasicConfig {
 	{
 		return max(Ts::TVAL::MAX_STRLEN ...);
 	}
+	template<class Entry, class ... Ts>
+	static constexpr bool to_flash_fn(Entry _1,FlashSaved<Ts...> _2)
+	{
+		return ((std::is_same<Entry,Ts>::value == true) || ...);
+	}
+
 public:
 	static constexpr std::size_t MAX_MAX_STRLEN =
 			MAX_MAX_STRLEN_fn(typename Basic_Config::Ea{});
@@ -425,11 +431,7 @@ public:
 		constexpr ConfigFields(const Entry & _)
 		: uid(Entry::uid16)
 		, coldboot_required(Entry::coldboot_required)
-		, to_flash(
-				[]<class ... Ts>(FlashSaved<Ts...> _)->bool
-				{
-								return ((std::is_same<Entry,Ts>::value == true) | ...);
-				}(Saved{}))
+		, to_flash(to_flash_fn(Entry{},Saved{}))
 		, is_directory(Entry::is_directory)
 		, help(Entry::help)
 		, name(Entry::name)
