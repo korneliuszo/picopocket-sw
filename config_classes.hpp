@@ -53,10 +53,10 @@ public:
 template<class CRTP,auto EnumVal, class ... Entries>
 class Dir {
 public:
-	using Es = decltype(std::tuple_cat(typename Entries::E{} ...));
 
 	class DirElem {
 	public:
+		using Es = decltype(std::tuple_cat(typename Entries::E{} ...));
 		static constexpr auto uid = EnumVal;
 		static constexpr uint16_t uid16 = static_cast<uint16_t>(EnumVal);
 		static constexpr bool coldboot_required = false;
@@ -228,6 +228,7 @@ public:
 	using TVAL = VAL;
 	using E = std::tuple<CRTP>;
 	using Ea = E;
+	using Es = std::tuple<>;
 	static inline VAL val = DEFAULT;
 	static constexpr bool is_directory = false;
 	static void reset() {val = DEFAULT;};
