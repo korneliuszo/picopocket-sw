@@ -411,12 +411,37 @@ class BasicConfig {
 		return ((std::is_same<Entry,Ts>::value == true) || ...);
 	}
 
+	template<class Entry, class ... Ts>
+	static constexpr bool is_inside_tuple(Entry _1,std::tuple<Ts...> _2)
+	{
+		return ((std::is_same<Entry,Ts>::value == true) || ... || false);
+	}
+
+	template<class Entry, class Parent>
+	static constexpr bool is_parent(uint16_t &ret,Entry _1,Parent _2)
+	{
+		if(is_inside_tuple(Entry{}, typename Parent::Es{}))
+		{
+			ret = Parent::uid16;
+			return true;
+		}
+		return false;
+	}
+
+	template<class Entry, class ... Ts>
+	static constexpr uint16_t parent_fn(Entry _1,std::tuple<Ts...> _2)
+	{
+		uint16_t ret = 0;
+		(is_parent(ret,Entry{},Ts{}) || ...);
+		return ret;
+	}
 public:
 	static constexpr std::size_t MAX_MAX_STRLEN =
 			MAX_MAX_STRLEN_fn(typename Basic_Config::Ea{});
 
 	struct ConfigFields {
 		const uint16_t uid;
+		const uint16_t parent_uid;
 		const bool coldboot_required;
 		const bool to_flash;
 		const bool is_directory;
@@ -430,6 +455,7 @@ public:
 		template<class Entry>
 		constexpr ConfigFields(const Entry & _)
 		: uid(Entry::uid16)
+		, parent_uid(parent_fn(Entry{},typename Basic_Config::Ea{}))
 		, coldboot_required(Entry::coldboot_required)
 		, to_flash(to_flash_fn(Entry{},Saved{}))
 		, is_directory(Entry::is_directory)
