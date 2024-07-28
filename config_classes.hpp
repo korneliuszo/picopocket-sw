@@ -406,7 +406,6 @@ public:
 			{
 				return max(Ts::TVAL::MAX_STRLEN ...);
 			}(typename Basic_Config::Ea{});
-private:
 	struct ConfigFields {
 		const uint16_t uid;
 		const bool coldboot_required;
@@ -437,7 +436,7 @@ private:
 		, reset(&Entry::reset)
 		{};
 	};
-
+private:
 	template<class ... Args>
 	class ConfigFields_Impl {
 	public:
