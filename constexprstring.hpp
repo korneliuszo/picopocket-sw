@@ -11,23 +11,23 @@ public:
 
 	constexpr CStr()
 	: std::array<char,LEN>(){}
-
-	template<typename UINT>
-	constexpr CStr(UINT v)
-	: std::array<char,LEN>()
-	{
-		UINT msb = 1;
-		for(uint i=0;i<LEN;i++)
-			msb*=10;
-		for(uint i=0;i<LEN;i++)
-		{
-			msb=msb/10;
-			this -> operator[](i) = '0' + (v / msb);
-			v = v % msb;
-		}
-	}
-
 };
+
+template<std::size_t LEN, typename UINT>
+constexpr CStr<LEN> fxdintz(UINT v)
+{
+	CStr<LEN> ret = {};
+	UINT msb = 1;
+	for(uint i=0;i<LEN;i++)
+		msb*=10;
+	for(uint i=0;i<LEN;i++)
+	{
+		msb=msb/10;
+		ret[i] = '0' + (v / msb);
+		v = v % msb;
+	}
+	return ret;
+}
 
 template <std::size_t LEN>
 constexpr CStr<LEN-1> CString(const char (&in)[LEN])

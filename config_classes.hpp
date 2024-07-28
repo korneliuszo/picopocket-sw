@@ -106,7 +106,7 @@ public:
 		{
 		static constexpr auto str = CStrcat(
 				CString("0x%0"),
-				CStr<3>(sizeof(UINT)*2),
+				fxdintz<3>(sizeof(UINT)*2),
 				CString("X"),
 				CString("\0"));
 		snprintf(ret,MAX_STRLEN,str.data(),ival);
