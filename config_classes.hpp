@@ -142,17 +142,7 @@ public:
 
 	std::size_t repr(char ret[MAX_STRLEN]) const
 		{
-		static constexpr auto str = CStrcat(
-				CString("% "),
-				CStr<3>(3),
-				CString("u.% "),
-				CStr<3>(3),
-				CString("u.% "),
-				CStr<3>(3),
-				CString("u.% "),
-				CStr<3>(3),
-				CString("u\0"));
-		snprintf(ret,MAX_STRLEN,str.data(),
+		snprintf(ret,MAX_STRLEN,"% 3u.% 3u.% 3u.% 3u",
 				0xFF&ival,
 				0xFF&(ival>>8),
 				0xFF&(ival>>16),
