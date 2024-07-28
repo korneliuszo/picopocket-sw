@@ -400,12 +400,15 @@ public:
 
 template<class Saved, class Basic_Config>
 class BasicConfig {
+	template<class ... Ts>
+	static constexpr std::size_t MAX_MAX_STRLEN_fn(std::tuple<Ts...> _)
+	{
+		return max(Ts::TVAL::MAX_STRLEN ...);
+	}
 public:
 	static constexpr std::size_t MAX_MAX_STRLEN =
-			[]<class ... Ts>(std::tuple<Ts...> _)->std::size_t
-			{
-				return max(Ts::TVAL::MAX_STRLEN ...);
-			}(typename Basic_Config::Ea{});
+			MAX_MAX_STRLEN_fn(typename Basic_Config::Ea{});
+
 	struct ConfigFields {
 		const uint16_t uid;
 		const bool coldboot_required;
