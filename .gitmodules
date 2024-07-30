@@ -1,3 +1,6 @@
 [submodule "picopocket-hw"]
 	path = picopocket-hw
 	url = https://github.com/korneliuszo/picopocket-hw/
+[submodule "lib/picow-http"]
+	path = lib/picow-http
+	url = https://gitlab.com/korneliuszo/picow_http.git

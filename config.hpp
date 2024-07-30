@@ -220,4 +220,5 @@ using Flash_Storage = Impl::FlashSaved<
 		>;
 using Config = Impl::BasicConfig<Flash_Storage,RootDir>;
 using USB_Access = Config;
+using WWW_Access = Config;
 }

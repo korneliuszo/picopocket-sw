@@ -9,7 +9,7 @@
 #include "tusb.h"
 #include "device/usbd_pvt.h"
 #include "network_l2.hpp"
-
+#include "www.hpp"
 #include "config.hpp"
 
 constexpr uint32_t PICO_Freq=380; //PM_SYS_CLK;
@@ -28,6 +28,8 @@ int main(void)
 	tusb_init();
 
 	network_init();
+
+	www_init();
 
 	while(1)
 	{

@@ -3,23 +3,34 @@
 
 
 #define NO_SYS                      1
+
+#ifndef MAX_CONCURRENT_CX_HINT
+#define MAX_CONCURRENT_CX_HINT      3
+#endif
+
+#define NUM_SERVER_HINT             1
+
 #define LWIP_SOCKET                 0
 
 #define MEM_LIBC_MALLOC             0
 
 #define MEM_ALIGNMENT               4
-#define MEM_SIZE                    4000
-#define MEMP_NUM_TCP_SEG            32
+#define MEM_SIZE                    (MAX_CONCURRENT_CX_HINT * TCP_MSS)
 #define MEMP_NUM_ARP_QUEUE          10
 #define PBUF_POOL_SIZE              24
 #define LWIP_ARP                    1
 #define LWIP_ETHERNET               1
 #define LWIP_ICMP                   1
 #define LWIP_RAW                    1
-#define TCP_WND                     (8 * TCP_MSS)
+#define TCP_WND                     (MAX_CONCURRENT_CX_HINT * TCP_MSS)
 #define TCP_MSS                     1460
-#define TCP_SND_BUF                 (8 * TCP_MSS)
+#define TCP_SND_BUF                 (MAX_CONCURRENT_CX_HINT * TCP_MSS)
 #define TCP_SND_QUEUELEN            ((4 * (TCP_SND_BUF) + (TCP_MSS - 1)) / (TCP_MSS))
+#define MEMP_NUM_TCP_SEG            TCP_SND_QUEUELEN
+
+#define MEMP_NUM_TCP_PCB            (MAX_CONCURRENT_CX_HINT)
+#define MEMP_NUM_TCP_PCB_LISTEN     (NUM_SERVER_HINT)
+
 #define LWIP_NETIF_STATUS_CALLBACK  1
 #define LWIP_NETIF_LINK_CALLBACK    1
 #define LWIP_NETIF_HOSTNAME         1

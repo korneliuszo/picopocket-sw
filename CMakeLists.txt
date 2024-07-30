@@ -8,16 +8,28 @@ set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 
 project(picopocket-sw)
 
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/picow-http)
+
 add_executable(picopocket-sw
 	main.cpp
 	usb_descriptors.cpp
 	usb_config.cpp
 	network_l2.cpp
+	www.cpp
+)
 
 target_compile_definitions(picopocket-sw PRIVATE
 	PICO_PANIC_NO_STRINGS_ON_TARGET
 #	PICO_PANIC_FUNCTION=
 )
+
+
+picow_http_gen_handlers(picopocket-sw
+        ${CMAKE_CURRENT_SOURCE_DIR}/www/www.yaml
+        ${CMAKE_CURRENT_SOURCE_DIR}/www
+        ${CMAKE_CURRENT_SOURCE_DIR}/www/index.html
+)
+
 
 pico_set_program_name(picopocket-sw "picopocket-sw")
 pico_set_program_version(picopocket-sw "0.1")
@@ -32,6 +44,7 @@ target_link_libraries(picopocket-sw PRIVATE
 	tinyusb_board
 	pico_cyw43_arch_none
 	pico_lwip_nosys
+	picow_http
 )
 
 target_include_directories(picopocket-sw PRIVATE ${CMAKE_CURRENT_LIST_DIR})

@@ -1,0 +1,16 @@
+- server:
+  - custom:
+      path: /
+      methods:
+      - GET  
+      - HEAD    
+  - custom:
+      path: /config
+      methods:
+      - HEAD
+      - GET
+  - custom:
+      path: /index_config
+      methods:
+      - HEAD
+      - GET
