@@ -4,13 +4,16 @@
 #include "pico/time.h"
 #include "hardware/vreg.h"
 #include "hardware/regs/vreg_and_chip_reset.h"
+#include "hardware/regs/busctrl.h"              /* Bus Priority defines */
 #include "hardware/clocks.h"
+#include "hardware/structs/bus_ctrl.h"
 #include "hardware/structs/clocks.h"
 #include "tusb.h"
 #include "device/usbd_pvt.h"
 #include "network_l2.hpp"
 #include "www.hpp"
 #include "config.hpp"
+#include <isa_worker.hpp>
 
 constexpr uint32_t PICO_Freq=380; //PM_SYS_CLK;
 
@@ -23,13 +26,21 @@ int main(void)
 	sleep_ms(100);
 	set_sys_clock_khz(PICO_Freq*1000, true);
 
+	ISA_Pre_Init();
+
 	Config::Flash_Storage::load();
+
+	ISA_Init();
 
 	tusb_init();
 
 	network_init();
 
 	www_init();
+
+
+	bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_DMA_R_BITS | BUSCTRL_BUS_PRIORITY_DMA_W_BITS;
+	ISA_Start();
 
 	while(1)
 	{
