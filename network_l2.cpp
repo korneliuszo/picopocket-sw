@@ -15,6 +15,10 @@
 
 #include "network_l2.hpp"
 
+#include <NEx000.hpp>
+
+NE1000 card_sta;
+
 #include "config.hpp"
 
 static err_t cyw43_netif_output(struct netif *netif, struct pbuf *p) {
@@ -119,6 +123,7 @@ extern "C" void cyw43_cb_tcpip_set_link_down(cyw43_t *self, int itf) {
 extern "C" void cyw43_cb_process_ethernet(void *cb_data, int itf, size_t len, const uint8_t *buf) {
 
 	//ne200 input
+	card_sta.rx_packet(buf,len);
 
 	cyw43_t *self = (cyw43_t*)cb_data;
     struct netif *netif = &cy_netif[itf];
@@ -133,19 +138,31 @@ extern "C" void cyw43_cb_process_ethernet(void *cb_data, int itf, size_t len, co
     }
 }
 
+void ne1000_sta_tx(uint8_t* buff, size_t len)
+{
+	cyw43_send_ethernet(&cyw43_state, CYW43_ITF_STA, len, (void *)buff, false);
+}
 
 void network_init()
 {
 	cyw43_arch_init_with_country(CYW43_COUNTRY_WORLDWIDE); //todo configurize country
 	async_context * actx = cyw43_arch_async_context();
 	lwip_nosys_init(actx);
+
 	cyw43_arch_enable_sta_mode();
 	cyw43_wifi_pm(&cyw43_state, CYW43_DEFAULT_PM & ~0xf);
+
+	uint8_t sta_mac[6];
+	cyw43_wifi_get_mac(&cyw43_state, CYW43_ITF_STA, sta_mac);
+	card_sta.Connect_ISA(0x300,IRQ_Create_Handle(5),ne1000_sta_tx,sta_mac);
+
 }
 
 void network_poll()
 {
 	cyw43_arch_poll();
+
+	card_sta.update_polled_state();
 
 	const char * ssid = Config::WIFI_SSID::val.ival;
 	const char * pw = Config::WIFI_PW::val.ival;

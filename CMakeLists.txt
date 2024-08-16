@@ -41,6 +41,7 @@ pico_add_extra_outputs(picopocket-sw)
 target_link_libraries(picopocket-sw PRIVATE
 	isa_worker
 	hardware_flash
+	hardware_sync
 	tinyusb_device
 	tinyusb_board
 	pico_cyw43_arch_none
