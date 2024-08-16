@@ -18,6 +18,20 @@
 constexpr uint32_t PICO_Freq=380; //PM_SYS_CLK;
 
 
+extern "C" const uint8_t _binary_optionrom_bin_start[];
+extern "C" const uint8_t _binary_optionrom_bin_end[];
+extern "C" const uint8_t _binary_optionrom_bin_size[];
+
+static uint32_t read_fn(void* obj, uint32_t faddr)
+{
+	volatile uint8_t * arr = static_cast<volatile uint8_t*>(obj);
+	uint8_t ret = arr[faddr];
+	return ret;
+}
+
+static void nop_wrfn(void* obj, uint32_t faddr, uint8_t data) {}
+
+
 int main(void)
 {
 
@@ -37,6 +51,15 @@ int main(void)
 	network_init();
 
 	www_init();
+
+	add_device({
+					.start = 0xC8000,
+					.size = (uint32_t)_binary_optionrom_bin_size,
+					.type = Device::Type::MEM,
+					.rdfn = read_fn,
+					.wrfn = nop_wrfn,
+					.obj = (void*)_binary_optionrom_bin_start,
+	});
 
 
 	bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_DMA_R_BITS | BUSCTRL_BUS_PRIORITY_DMA_W_BITS;
