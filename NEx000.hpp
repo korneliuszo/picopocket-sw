@@ -452,7 +452,7 @@ public:
 		if((left_bnry <= 0))
 			left_bnry += (pstop_reg - pstart_reg);
 
-		if(left_bnry < page_len)
+		if(left_bnry - 1 < page_len)
 		{	prx_bit = false;
 			rsr_recalc();
 			uint32_t save = spin_lock_blocking(spinlock);
