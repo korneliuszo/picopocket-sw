@@ -197,8 +197,16 @@ SECTIONS
 
 	.core1 (NOLOAD): {
 	    . = ALIGN(4);
-        *(.core1*)
+        *(.core1)
 	} > RAM_C
+
+	.core1_static : {
+	    __core1_static_start__ = .;
+        *(.core1_static*)	    
+	    . = ALIGN(4);
+	    __core1_static_end__ = .;
+	} > RAM_C AT > FLASH
+	__core1_static_source__ = LOADADDR(.core1_static);
 
     /* Start and end symbols must be word-aligned */
     .scratch_x : {

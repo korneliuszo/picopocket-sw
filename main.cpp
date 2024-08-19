@@ -22,6 +22,7 @@ extern "C" const uint8_t _binary_optionrom_bin_start[];
 extern "C" const uint8_t _binary_optionrom_bin_end[];
 extern "C" const uint8_t _binary_optionrom_bin_size[];
 
+[[gnu::section(".core1_static")]]
 static uint32_t read_fn(void* obj, uint32_t faddr)
 {
 	volatile uint8_t * arr = static_cast<volatile uint8_t*>(obj);
@@ -29,8 +30,16 @@ static uint32_t read_fn(void* obj, uint32_t faddr)
 	return ret;
 }
 
+[[gnu::section(".core1_static")]]
 static void nop_wrfn(void* obj, uint32_t faddr, uint8_t data) {}
 
+static void copy_optionroms(void) {
+  extern char __core1_static_start__[];
+  extern char __core1_static_end__[];
+  extern char __core1_static_source__[];
+
+  memcpy(__core1_static_start__, __core1_static_source__, (__core1_static_end__-__core1_static_start__));
+}
 
 int main(void)
 {
@@ -51,7 +60,7 @@ int main(void)
 	network_init();
 
 	www_init();
-
+	copy_optionroms();
 	add_device({
 					.start = 0xC8000,
 					.size = (uint32_t)_binary_optionrom_bin_size,
