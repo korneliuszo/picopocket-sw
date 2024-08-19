@@ -513,4 +513,14 @@ public:
 	uint8_t buff[buff_len];
 };
 
+class NE2000_RAM
+{
+public:
+	constexpr static const size_t buff_len = 16*1024;
+	constexpr static const size_t buff_start = 16*1024;
+	constexpr static const size_t buff_end = buff_len + buff_start;
+	uint8_t buff[buff_len];
+};
+
 using NE1000 = DP8390<NE1000_RAM>;
+using NE2000 = DP8390<NE2000_RAM>;
