@@ -4,8 +4,8 @@ include(FetchContent)
 
 FetchContent_Declare(
   ne2000xt_bin
-  URL      https://github.com/korneliuszo/ne2000xt/releases/download/v0.7/optionrom.bin
-  URL_HASH MD5=8cf1cee69caa3dba6740c54f91050c2a
+  URL      https://github.com/korneliuszo/ne2000xt/releases/download/v0.8/optionrom.bin
+  URL_HASH MD5=3296465e867ce706f178ea177f37f625
   DOWNLOAD_NO_EXTRACT true
 )
 
