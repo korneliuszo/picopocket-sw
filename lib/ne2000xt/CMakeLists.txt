@@ -14,7 +14,7 @@ FetchContent_MakeAvailable(ne2000xt_bin)
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/optionrom.o
 	WORKING_DIRECTORY ${ne2000xt_bin_SOURCE_DIR}
-	COMMAND ${CMAKE_LINKER} -r -b binary -o ${CMAKE_CURRENT_BINARY_DIR}/optionrom.o optionrom.bin
+	COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-littlearm --rename-section .data=.core1_static optionrom.bin ${CMAKE_CURRENT_BINARY_DIR}/optionrom.o
 	#places in data
 	DEPENDS ${ne2000xt_bin_SOURCE_DIR}/optionrom.bin
 )
