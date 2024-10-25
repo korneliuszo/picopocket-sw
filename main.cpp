@@ -15,7 +15,7 @@
 #include "config.hpp"
 #include <isa_worker.hpp>
 
-constexpr uint32_t PICO_Freq=380; //PM_SYS_CLK;
+constexpr uint32_t PICO_Freq=250; //PM_SYS_CLK;
 
 
 extern "C" const uint8_t _binary_optionrom_bin_start[];
