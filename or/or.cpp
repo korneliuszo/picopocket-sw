@@ -71,6 +71,7 @@ struct ORHandler : public IoIface::OHandler {
 			{
 				if(itr_hndlr->decide(thread_data.entry))
 				{
+					thread_data.cmd.command = 0x00; //notYET
 					thread_entry = reinterpret_cast<Thread_SHM::ENTRY>(itr_hndlr->entry);
 					itr_hndlr++;
 					arbiter.reset();
@@ -131,7 +132,6 @@ struct ORHandler : public IoIface::OHandler {
 					{
 						if(itr_hndlr->decide(thread_data.entry))
 						{
-							thread_data.cmd.command = 0x00; //notYET
 							thread_entry = reinterpret_cast<Thread_SHM::ENTRY>(itr_hndlr->entry);
 							thread_stopping = true;
 							itr_hndlr++;
@@ -139,6 +139,7 @@ struct ORHandler : public IoIface::OHandler {
 						}
 						itr_hndlr++;
 					}
+					return cmd;
 				}
 				state =STATE::SEND_DATA;
 				bytes = 0;

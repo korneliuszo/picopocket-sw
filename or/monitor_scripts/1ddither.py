@@ -42,6 +42,8 @@ if __name__ == "__main__":
     i=i.convert("L")
     q= queue.Queue(10)
     
+    cga.m.jump_to_ram(0xDC00,0x0C00)
+     
     def send_display():
         while True:
             item = q.get()

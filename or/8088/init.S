@@ -10,6 +10,12 @@ entry:
 org 0x10
 call_from_utilities:
 	jmp short callback
+org 0x14
+public port_no
+port_no:
+	dw 0x88
+org 0x16
+	dw ptr irqentry
 org 0x20
 public entry0
 entry0: ; boot

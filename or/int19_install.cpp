@@ -28,11 +28,13 @@ static void int19_entry (Thread_SHM * thread)
 		thread->putstr(str);
 		thread->callback_end();
 	}
-	if(int19chain)
+	if(int19chain && thread->entry.regs.regs.rettype == 0x01)
+	{
 		thread->chain(int19chain);
-	thread->set_return();
-	static const char str[] = "PicoPocket int19 chained\r\n";
-	thread->putstr(str);
+		thread->set_return();
+		static const char str[] = "PicoPocket int19 chained\r\n";
+		thread->putstr(str);
+	}
 	thread->callback_end();
 }
 

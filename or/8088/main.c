@@ -67,11 +67,15 @@ void putmem(uint8_t far * addr,unsigned len, unsigned port);
 
 void getmem(uint8_t far * addr,unsigned len, unsigned port);
 #pragma aux getmem = \
+		"push ds" \
+		"mov ds,cx" \
+		"mov cx,bx" \
 		"l1:" \
 		"lodsb" \
 		"out dx,al" \
 		"loop l1" \
-		parm [es si] [cx] [dx] \
+		"pop ds" \
+		parm [cx si] [bx] [dx] \
 		modify exact [al cx si cx];
 
 
@@ -89,24 +93,28 @@ const int retcode_map[] = { 1, 0, -1};
 extern const uint8_t  __based( __segname( "_CODE" ) ) irqentry;
 #pragma aux irqentry "irqentry";
 
+extern const unsigned  __based( __segname( "_CODE" ) ) port_no;
+#pragma aux port_no "port_no";
+
+
 int __cdecl start(uint16_t irq, IRQ_DATA far * params);
 int start(uint16_t irq, IRQ_DATA far * params)
 {
 	uint8_t sync_counter = 0;
 	uint8_t rettype = irq == 0x01 ? 0x01 : 0x02;
 	unsigned codeplace = (params->ph2 - (unsigned)&irqentry)/3-1; // call near takes 3 bytes
-	outp(0x89,0x01);
-	outp(0x88,irq);
-	outp(0x88,codeplace);
+	outp(port_no+1,0x01);
+	outp(port_no,irq);
+	outp(port_no,codeplace);
 	for(uint8_t far * i=(uint8_t far *)params, far *e = i+sizeof(*params);i<e;i++)
-		outp(0x88,*i);
-	outp(0x88,rettype);
-	outp(0x88,0xed); //TODO: full isolation
+		outp(port_no,*i);
+	outp(port_no,rettype);
+	outp(port_no,0xed); //TODO: full isolation
 	outp(0x80,0x00); //DEBUG
 	while(1)
 	{
 		uint8_t req;
-		while((req = inph(0x88))==0x00) //NotYET
+		while((req = inph(port_no))==0x00) //NotYET
 		{
 			//powersave??
 		}
@@ -114,7 +122,7 @@ int start(uint16_t irq, IRQ_DATA far * params)
 		switch(req)
 		{
 		case 0x03:
-			outp(0x89,0x00); //TODO: full isolation
+			outp(port_no+1,0x00); //TODO: full isolation
 			return retcode_map[rettype];
 		default:
 			while(1); //break
@@ -124,22 +132,22 @@ int start(uint16_t irq, IRQ_DATA far * params)
 			STACKCODE_DATA_t regs;
 			uint8_t code[8];
 			for(uint8_t far * i=(uint8_t far *)&regs, far *e = i+sizeof(regs);i<e;i++)
-				*i=inph(0x88);
+				*i=inph(port_no);
 			for(uint8_t far * i=(uint8_t far *)code, far *e = i+8;i<e;i++)
-				*i=inph(0x88);
+				*i=inph(port_no);
 			stackcode(&regs,code);
 			for(uint8_t far * i=(uint8_t far*)&regs, far *e = i+sizeof(regs);i<e;i++)
-				outp(0x88,*i);
+				outp(port_no,*i);
 			continue;
 		 }
 		case 0x02:
 			for(uint8_t far * i=(uint8_t far *)params, far *e = i+sizeof(*params);i<e;i++)
-				*i=inph(0x88);
-			rettype = inph(0x88);
+				*i=inph(port_no);
+			rettype = inph(port_no);
 			continue;
 		case 0x08:
 		 {
-			unsigned irq = inp(0x88);
+			unsigned irq = inp(port_no);
 			unsigned far * IVT=0x0000:>((unsigned*)(irq*4));
 			unsigned old[2];
 			{ //ISR
@@ -150,45 +158,45 @@ int start(uint16_t irq, IRQ_DATA far * params)
 			}
 			if(old[0] == IVT[0] && old[1] == IVT[1])
 				old[1] = old[0] = 0;
-			outp(0x88,old[0]);
-			outp(0x88,old[0]>>8);
-			outp(0x88,old[1]);
-			outp(0x88,old[1]>>8);
+			outp(port_no,old[0]);
+			outp(port_no,old[0]>>8);
+			outp(port_no,old[1]);
+			outp(port_no,old[1]>>8);
 			continue;
 		 }
 		case 0x04:
 		 {
-			unsigned port = inp_bew(0x88);
-			unsigned val = inph(0x88);
+			unsigned port = inp_bew(port_no);
+			unsigned val = inph(port_no);
 			outp(port,val);
 			continue;
 		 }
 		case 0x05:
 		 {
-			unsigned port = inp_bew(0x88);
+			unsigned port = inp_bew(port_no);
 			unsigned val = inph(port);
-			outp(0x88,val);
+			outp(port_no,val);
 			continue;
 		 }
 		case 0x06:
 		 {
-			__segment seg = inp_bew(0x88);
-			uint8_t __based( seg ) * addr = (uint8_t __based( seg ) *)inp_bew(0x88);
-			unsigned len = inp_bew(0x88);
-			putmem(addr,len,0x88);
+			__segment seg = inp_bew(port_no);
+			uint8_t __based( seg ) * addr = (uint8_t __based( seg ) *)inp_bew(port_no);
+			unsigned len = inp_bew(port_no);
+			putmem(addr,len,port_no);
 			continue;
 		}
 		case 0x07:
 		 {
-			__segment seg = inp_bew(0x88);
-			uint8_t __based( seg ) * addr = (uint8_t __based( seg ) *)inp_bew(0x88);
-			unsigned len = inp_bew(0x88);
-			getmem(addr,len,0x88);
+			__segment seg = inp_bew(port_no);
+			uint8_t __based( seg ) * addr = (uint8_t __based( seg ) *)inp_bew(port_no);
+			unsigned len = inp_bew(port_no);
+			getmem(addr,len,port_no);
 			continue;
 		}
 		case 0x09:
 		 {
-			 outp(0x88,sync_counter++);
+			 outp(port_no,sync_counter++);
 			 continue;
 		 }
 	 }
