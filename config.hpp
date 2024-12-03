@@ -20,7 +20,7 @@ enum class UID : uint16_t {
 		WIFI_CONNECTED,
 	BIOS_DIR,
 		BIOS_SEGMENT,
-	IO_PORT,
+		MONITOR_AUTOBOOT,
 };
 
 constexpr char USB_SERIAL_NO_DEFAULT[] = "NONAME";
@@ -181,24 +181,20 @@ public:
 	static constexpr char name[] = "BIOS_SEGMENT";
 };
 
-class IO_PORT : public Impl::CElem<IO_PORT,UID::IO_PORT,Impl::HexInt<IO_PORT,uint16_t>,0x88>{
+class MONITOR_AUTOBOOT : public Impl::CElem<MONITOR_AUTOBOOT,UID::MONITOR_AUTOBOOT,Impl::Bool,true>{
 public:
 	static constexpr bool coldboot_required = true;
-	static constexpr char help[] = "io port base";
-	static bool validate(uint16_t)
-	{
-		return true;
-	};
-	static constexpr char name[] = "IO_PORT";
+	static constexpr char help[] = "Monitor autoboot";
+	static constexpr char name[] = "MONITOR_AUTOBOOT";
 };
 
-class BiosDir : public Impl::Dir<BiosDir,UID::BIOS_DIR,BIOS_SEGMENT>{
+class BiosDir : public Impl::Dir<BiosDir,UID::BIOS_DIR,BIOS_SEGMENT,MONITOR_AUTOBOOT>{
 public:
 	static constexpr char help[] = "bios dir";
 	static constexpr char name[] = "bios Dir";
 };
 
-class RootDir : public Impl::Dir<RootDir,UID::ROOT_DIR,UsbDir,WIFI_DIR,BiosDir,IO_PORT>{
+class RootDir : public Impl::Dir<RootDir,UID::ROOT_DIR,UsbDir,WIFI_DIR,BiosDir,MONITOR_AUTOBOOT>{
 public:
 	static constexpr char help[] = "root_dir";
 	static constexpr char name[] = "ROOT_DIR";
@@ -222,8 +218,9 @@ using Flash_Storage = Storage<
 		WIFI_DNS,
 		WIFI_HOSTNAME,
 		BIOS_SEGMENT,
-		IO_PORT
+		MONITOR_AUTOBOOT
 		>;
+
 using Config = Impl::BasicConfig<Flash_Storage,RootDir>;
 using USB_Access = Config;
 using WWW_Access = Config;

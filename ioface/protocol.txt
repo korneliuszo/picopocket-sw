@@ -1,0 +1,65 @@
+port - 0x88,0x90,2
+0 - pipe data
+1 - pipe control
+ - 0x00 - release
+ - other - protocol select
+each pair seperate stack 
+
+isolation
+1. send needed select
+2. for each hwaddr bit - byte sent msb first
+   1. (optional) when making discovery
+      1. inb() == 0xa5 - there is device with bit set to 0
+      2. inb() == 0x5a - there is device with bit set to 1
+   2. send bit as outb(0x5a) as true, outb(0xa5) as false,
+      outb(0xed) as already unique select (skip rest bits)
+
+hwaddr - pico_get_unique_board_id - all 8 bytes - swapped (LE)
+
+3. optionrom protocol
+
+    retry:
+     pc sends select (0x01 on odd port)
+     pc sends <number of entrypoint> 
+    	 - 0 - bios optionrom init
+    	 - 1 - real mode irq
+    	 - other - call into optionrom
+     pc sends <irq no>
+	 pc sends (LE) es ds di si bp bx dx cx ax f ph1 ph2 ip cs rf <rettype>
+	 rettype
+		- 0x00 - chain
+		- 0x01 - return irq
+		- 0x02 - return far
+ 	 isolation procedure
+ 	   if None:
+ 	       pc returns from option rom
+	  pico sends type of request
+		0x00 - NotYET busy loop - synchronous interface!!
+		         0x01 - wait for irq in halt op code
+		0x01 - stackcode8
+		       pico sends (LE) es ds di si bx dx cx ax f
+		       pico sends 8 bytes of code
+		       after PC execution
+		       pc sends (LE) es ds di si bx dx cx ax f
+		0x02 - set return
+		       pico sends (LE) es ds di si bp bx dx cx ax f ph1 ph2 ip cs rf rettype
+		0x03 - callback end
+		       pc sends release channel (0x00 on odd port)
+		       goto retry
+        0x04 - outb
+               pico sends (BE) port val
+        0x05 - inb
+               pico sends (BE) port
+               pc sends val
+        0x06 - putmem
+               pico sends (BE) seg addr len
+               pico sends data               
+        0x07 - getmem
+               pico sends (BE) seg addr len
+               pc sends data
+        0x08 - install irq
+               pico sends irq_no
+               pc sends old ivt - 0x0000:0x0000 in case of already installed
+        0x09 - sync
+               pc sends <uint8_t:sync counter>
+               
