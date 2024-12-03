@@ -204,8 +204,14 @@ public:
 	static constexpr char name[] = "ROOT_DIR";
 };
 
-
-using Flash_Storage = Impl::FlashSaved<
+#ifndef PICOPOCKET_SIM
+template<class ... Ts>
+using Storage = Impl::FlashSaved<Ts ...>;
+#else
+template<class ... Ts>
+using Storage = Impl::NopSaved<Ts ...>;
+#endif
+using Flash_Storage = Storage<
 		USB_SERIAL_NO,
 		WIFI_SSID,
 		WIFI_PW,

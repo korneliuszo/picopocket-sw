@@ -5,9 +5,12 @@
 #include<cstdio>
 #include<limits>
 #include<tuple>
+#include<cstring>
 #include "constexprstring.hpp"
+#ifndef PICOPOCKET_SIM
 #include "hardware/flash.h"
 #include "hardware/regs/addressmap.h"
+#endif
 
 namespace Config {
 
@@ -91,6 +94,27 @@ public:
 	};
 	using E = std::tuple<DirElem>;
 	using Ea = decltype(std::tuple_cat(E{},typename Entries::Ea{}...));
+};
+
+class Bool{
+public:
+	bool ival;
+	constexpr Bool(bool defval): ival(defval){};
+	using T = bool;
+	static constexpr std::size_t MAX_STRLEN = 2;
+
+
+	std::size_t repr(char ret[MAX_STRLEN]) const
+		{
+		strncpy(ret,ival?"T":"F",MAX_STRLEN);
+		return strlen(ret);
+	}
+
+	bool set_repr(const char* str)
+	{
+		ival = str[0] == 'T';
+		return true;
+	}
 };
 
 template<typename UINT>
@@ -234,6 +258,7 @@ public:
 	static void reset() {val = DEFAULT;};
 };
 
+#ifndef PICOPOCKET_SIM
 namespace {
 extern "C" uint8_t const __flash_save_start[];
 extern "C" uint8_t const __flash_save_end[];
@@ -396,17 +421,36 @@ public:
 		writer.finalize();
 	}
 };
+#endif
 
+template<class ... Flash_Config>
+class NopSaved {
+private:
+
+public:
+	static void load()
+	{
+	}
+
+	static void save()
+	{
+	}
+};
 
 template<class Saved, class Basic_Config>
 class BasicConfig {
+public:
+	template<class ... Ts>
+	using Flash_Saved=Saved;
+
+private:
 	template<class ... Ts>
 	static constexpr std::size_t MAX_MAX_STRLEN_fn(std::tuple<Ts...> _)
 	{
 		return max(Ts::TVAL::MAX_STRLEN ...);
 	}
 	template<class Entry, class ... Ts>
-	static constexpr bool to_flash_fn(Entry _1,FlashSaved<Ts...> _2)
+	static constexpr bool to_flash_fn(Entry _1,Flash_Saved<Ts...> _2)
 	{
 		return ((std::is_same<Entry,Ts>::value == true) || ...);
 	}
@@ -438,8 +482,6 @@ class BasicConfig {
 public:
 	static constexpr std::size_t MAX_MAX_STRLEN =
 			MAX_MAX_STRLEN_fn(typename Basic_Config::Ea{});
-
-	using Flash_Saved=Saved;
 
 	struct ConfigFields {
 		const uint16_t uid;
