@@ -100,6 +100,7 @@ extern const unsigned  __based( __segname( "_CODE" ) ) port_no;
 int __cdecl start(uint16_t irq, IRQ_DATA far * params);
 int start(uint16_t irq, IRQ_DATA far * params)
 {
+	unsigned port_no = port_no;
 	uint8_t sync_counter = 0;
 	uint8_t rettype = irq == 0x01 ? 0x01 : 0x02;
 	unsigned codeplace = (params->ph2 - (unsigned)&irqentry)/3-1; // call near takes 3 bytes
