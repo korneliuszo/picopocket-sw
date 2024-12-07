@@ -443,6 +443,8 @@ public:
 	template<class ... Ts>
 	using Flash_Saved=Saved;
 
+	typedef Saved TSaved;
+
 private:
 	template<class ... Ts>
 	static constexpr std::size_t MAX_MAX_STRLEN_fn(std::tuple<Ts...> _)

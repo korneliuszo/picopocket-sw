@@ -113,10 +113,10 @@ class Config_Itf {
 				switch(request->wValue)
 				{
 				case 0:
-					Config::Flash_Storage::load();
+					Config::USB_Access::TSaved::load();
 					return tud_control_status(rhport, request);
 				case 1:
-					Config::Flash_Storage::save();
+					Config::USB_Access::TSaved::save();
 					return tud_control_status(rhport, request);
 				}
 				return false;

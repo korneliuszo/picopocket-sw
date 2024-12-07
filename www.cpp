@@ -126,12 +126,12 @@ static err_t config_handler(struct http *http, void *p)
 		}
 		case 6:
 		{
-			Config::WWW_Access::Flash_Saved::load();
+			Config::WWW_Access::TSaved::load();
 			return simple_resp(http,nullptr,0,false);
 		}
 		case 7:
 		{
-			Config::WWW_Access::Flash_Saved::save();
+			Config::WWW_Access::TSaved::save();
 			return simple_resp(http,nullptr,0,false);
 		}
 		}
@@ -211,12 +211,12 @@ static err_t index_config_handler(struct http *http, void *p)
 		}
 		case 2:
 		{
-			Config::WWW_Access::Flash_Saved::load();
+			Config::WWW_Access::TSaved::load();
 			return redirect(http,uid);
 		}
 		case 3:
 		{
-			Config::WWW_Access::Flash_Saved::save();
+			Config::WWW_Access::TSaved::save();
 			return redirect(http,uid);
 		}
 		}
