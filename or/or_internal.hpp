@@ -86,7 +86,7 @@ struct Thread_SHM : public StaticThread<1024>
 			wait_for_exec();
 		}
 	}
-	void set_return()
+	void set_return(ENTRY_STATE entry)
 	{
 		cmd.recv = nullptr;
 		BuffList send = {
@@ -100,9 +100,11 @@ struct Thread_SHM : public StaticThread<1024>
 	}
 	void chain(uint32_t chain)
 	{
+		auto entry = get_entry();
 		entry.regs.regs.ph1 = chain;
 		entry.regs.regs.ph2 = chain>>16;
 		entry.regs.regs.rettype = 0x00;
+		set_return(entry);
 	}
 	void callback_end()
 	{
@@ -128,7 +130,7 @@ struct Thread_SHM : public StaticThread<1024>
 				},
 				.code = { 0xCD, 0x10, 0xCB }
 		};
-		regs.regs.f = entry.regs.regs.f;
+		regs.regs.f = get_entry().regs.regs.f;
 
 		while(*str)
 		{
@@ -174,11 +176,40 @@ struct Thread_SHM : public StaticThread<1024>
 				},
 				.code = { 0xCD, 0x16, 0xCB }
 		};
-		regs.regs.f = entry.regs.regs.f;
+		regs.regs.f = get_entry().regs.regs.f;
 		regs.regs.ax = 0x0100;
 		stackcode8(&regs);
 		return regs.regs.ax;
 	}
+	ENTRY_STATE get_entry()
+	{
+		ENTRY_STATE ret;
+		BuffList recv[] = {
+				{
+						reinterpret_cast<uint8_t*>(&ret.entry),
+						sizeof(ret.entry),
+						&recv[1]
+				},
+				{
+						reinterpret_cast<uint8_t*>(&ret.irq_no),
+						sizeof(ret.irq_no),
+						&recv[2]
+				},
+				{
+						reinterpret_cast<uint8_t*>(&ret.regs.regs),
+						sizeof(ret.regs.regs),
+						nullptr
+				},
+		};
+		{
+			cmd.recv = &recv[0];
+			cmd.send = nullptr;
+			cmd.command = 0x0A;
+			wait_for_exec();
+		}
+		return ret;
+	}
+
 };
 
 #define OROMHandler_type_section [[gnu::section("or_handlers"),gnu::used]] const

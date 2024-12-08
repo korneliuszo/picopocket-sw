@@ -62,4 +62,8 @@ hwaddr - pico_get_unique_board_id - all 8 bytes - swapped (LE)
                pc sends old ivt - 0x0000:0x0000 in case of already installed
         0x09 - sync
                pc sends <uint8_t:sync counter>
-               
+        0x0A - get_params
+               pc sends <number of entrypoint>
+               pc sends <irq no>
+               pc sends (LE) es ds di si bp bx dx cx ax f ph1 ph2 ip cs rf <rettype>
+        

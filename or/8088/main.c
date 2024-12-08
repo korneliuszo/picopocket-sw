@@ -96,7 +96,6 @@ extern const uint8_t  __based( __segname( "_CODE" ) ) irqentry;
 extern const unsigned  __based( __segname( "_CODE" ) ) port_nog;
 #pragma aux port_nog "port_no";
 
-
 int __cdecl start(uint16_t irq, IRQ_DATA far * params);
 int start(uint16_t irq, IRQ_DATA far * params)
 {
@@ -200,6 +199,13 @@ int start(uint16_t irq, IRQ_DATA far * params)
 			 outp(port_no,sync_counter++);
 			 continue;
 		 }
+		case 0x0A:
+			outp(port_no,irq);
+			outp(port_no,codeplace);
+			for(uint8_t far * i=(uint8_t far *)params, far *e = i+sizeof(*params);i<e;i++)
+				outp(port_no,*i);
+			outp(port_no,rettype);
+			continue;
 	 }
 	}
 }
