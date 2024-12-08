@@ -102,5 +102,5 @@ class monitor():
         bios = self.getmem(orig_cs,0,2048)
         self.putmem(target_cs,0,bios)
         irqentry =  bios[0x16] | (bios[0x17]<<8)
-        self.chain((target_cs<<16) | (irqentry+3*0x19)<<0)
+        self.chain((target_cs<<16) | (irqentry+3*0x18)<<0)
         self.return_boot()
