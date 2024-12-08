@@ -110,6 +110,11 @@ public:
 		rdptr.ptr = data;
 	}
 
+	inline void clear_from_rd() volatile
+	{
+		rdptr.ptr = wrptr.ptr;
+	}
+
 	inline typename Iterator::Dereference get_wrbuff()
 	{
 		typename Iterator::Dereference buff = {wrptr};
