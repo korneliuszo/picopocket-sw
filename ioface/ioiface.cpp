@@ -70,10 +70,13 @@ static void write_fn(void* obj, uint32_t faddr, uint8_t data)
 				if(itr->ec == data)
 				{
 					IoIface::OHandler * nwhndlr = itr->acquire_object(pipe);
-					nwhndlr->stack_of_unrecognized = 0;
-					nwhndlr->prev = hndlr;
-					curr_handler[pipe] = nwhndlr;
-					return;
+					if(nwhndlr)
+					{
+						nwhndlr->stack_of_unrecognized = 0;
+						nwhndlr->prev = hndlr;
+						curr_handler[pipe] = nwhndlr;
+						return;
+					}
 				}
 				itr++;
 			}

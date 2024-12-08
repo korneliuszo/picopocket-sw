@@ -183,10 +183,12 @@ struct ORHandler : public IoIface::OHandler {
 	}
 };
 
-static ORHandler handles[4];
+static ORHandler handles[1];
 
 static IoIface::OHandler * acquire_object(uint8_t pipe)
 {
+	if(pipe > 1)
+		return nullptr;
 	handles[pipe].reset();
 	return &handles[pipe];
 }
@@ -222,7 +224,7 @@ void optionrom_install(Thread * main)
 void optionrom_start_worker(Thread * main)
 {
 	monitor_poll();
-	for(size_t i=0;i<4;i++)
+	for(size_t i=0;i<1;i++)
 	{
 		if(handles[i].thread_stopping && handles[i].thread_state)
 		{
