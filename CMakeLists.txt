@@ -11,6 +11,9 @@ project(picopocket-sw)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/picow-http)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/ne2000xt)
 
+add_subdirectory(ioface)
+add_subdirectory(or)
+
 add_executable(picopocket-sw
 	main.cpp
 	usb_descriptors.cpp
@@ -47,7 +50,9 @@ target_link_libraries(picopocket-sw PRIVATE
 	pico_cyw43_arch_none
 	pico_lwip_nosys
 	picow_http
-	ne2000xt
+	or
+	ioiface
+	jmpcoro
 )
 
 target_include_directories(picopocket-sw PRIVATE ${CMAKE_CURRENT_LIST_DIR})
