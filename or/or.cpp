@@ -221,6 +221,7 @@ void optionrom_install(Thread * main)
 
 void optionrom_start_worker(Thread * main)
 {
+	monitor_poll();
 	for(size_t i=0;i<4;i++)
 	{
 		if(handles[i].thread_stopping && handles[i].thread_state)

@@ -188,4 +188,6 @@ struct OROMHandler {
 };
 
 void monitor_install(Thread * main);
+void monitor_poll();
+
 void int19_install(Thread * main);

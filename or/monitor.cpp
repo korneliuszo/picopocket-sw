@@ -8,6 +8,11 @@
 #include <sys/fcntl.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#else
+#include "pico/cyw43_arch.h"
+#include "lwip/ip_addr.h"
+#include "lwip/err.h"
+#include "lwip/tcp.h"
 #endif
 
 extern const
@@ -15,13 +20,8 @@ OROMHandler monitor_handler;
 
 #ifdef PICOPOCKET_SIM
 using PCB = int;
-struct Packet
-{
-	Packet * next;
-	uint8_t * payload;
-	size_t tot_len;
-	size_t len;
-};
+#else
+using PCB = tcp_pcb*;
 #endif
 
 struct Recv_state {
@@ -68,6 +68,142 @@ static void* recv_thread(void* arg)
 		close(connfd);
 	}
 }
+#else
+
+tcp_pcb * csock;
+
+static void
+try_send(struct tcp_pcb *tpcb)
+{
+	err_t wr_err = ERR_OK;
+	while((wr_err == ERR_OK) && crstate.sendbuff.fifo_check())
+	{
+		uint16_t len;
+		{
+			auto buff = crstate.sendbuff.get_rdbuff();
+			len = buff.stop-buff.start;
+			wr_err = tcp_write(tpcb, const_cast<uint8_t*>(buff.start),len,1);
+		}
+		if(wr_err == ERR_OK)
+		{
+			crstate.sendbuff.commit_rdbuff(len);
+			if(!crstate.sendbuff.fifo_check())
+				wr_err = tcp_output(tpcb);
+		}
+	}
+}
+
+static struct pbuf * volatile recv_pbuff;
+static size_t off = 0;
+
+void try_recv(struct tcp_pcb *tpcb)
+{
+	while(recv_pbuff && crstate.recvbuff.fifo_free())
+	{
+		auto buff = crstate.recvbuff.get_wrbuff();
+		size_t len = std::min(crstate.recvbuff.fifo_free(),(long)(recv_pbuff->len-off));
+		buff.put_bytes(&static_cast<uint8_t*>(recv_pbuff->payload)[off],len,0);
+		crstate.recvbuff.commit_wrbuff(len);
+		off+=len;
+		if(off == recv_pbuff->len)
+		{
+			auto next = recv_pbuff->next;
+			if(next)
+				pbuf_ref(next);
+			pbuf_free(recv_pbuff);
+			recv_pbuff = next;
+			tcp_recved(tpcb, off);
+			off = 0;
+		}
+	}
+}
+
+static void
+sock_close(struct tcp_pcb *tpcb)
+{
+	csock = nullptr;
+	tcp_arg(tpcb, NULL);
+	tcp_sent(tpcb, NULL);
+	tcp_recv(tpcb, NULL);
+	tcp_err(tpcb, NULL);
+	tcp_poll(tpcb, NULL, 0);
+
+	tcp_close(tpcb);
+}
+
+static err_t
+sent_fn(void *arg, struct tcp_pcb *tpcb, u16_t len)
+{
+	try_send(tpcb);
+	if(!arg && !crstate.sendbuff.fifo_check())
+		sock_close(tpcb);
+	return ERR_OK;
+}
+
+static err_t
+poll_fn(void *arg, struct tcp_pcb *tpcb)
+{
+	if(!arg && !crstate.sendbuff.fifo_check())
+		sock_close(tpcb);
+	return ERR_OK;
+}
+
+static void
+error_fn(void *arg, err_t err)
+{
+	csock = nullptr;
+}
+
+static err_t
+recv_fn(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
+{
+	if (p == NULL)
+	{
+	    /* remote host closed connection */
+		tcp_arg(tpcb, NULL);
+		if(crstate.sendbuff.fifo_check())
+			try_send(tpcb);
+		else
+			sock_close(tpcb);
+		return err;
+	}
+	if(err != ERR_OK) {
+		/* cleanup, for unknown reason */
+		if (p != NULL) {
+			pbuf_free(p);
+		}
+		tcp_arg(tpcb, NULL);
+		return err;
+	}
+	if(recv_pbuff)
+	    pbuf_cat(recv_pbuff,p);
+	else
+		recv_pbuff = p;
+	try_recv(tpcb);
+    return ERR_OK;
+}
+
+
+static err_t accept_fn(void *arg, struct tcp_pcb *newpcb, err_t err)
+{
+	LWIP_UNUSED_ARG(arg);
+	if ((err != ERR_OK) || (newpcb == NULL)) {
+		return ERR_VAL;
+	}
+
+	if(csock)
+	{
+		return ERR_MEM;
+	}
+	csock = newpcb;
+	tcp_arg(newpcb, csock);
+	tcp_recv(newpcb, recv_fn);
+	tcp_err(newpcb, error_fn);
+	tcp_poll(newpcb, poll_fn, 0);
+	tcp_sent(newpcb, sent_fn);
+	return ERR_OK;
+}
+
 #endif
 
 void monitor_install(Thread * main)
@@ -94,6 +230,12 @@ void monitor_install(Thread * main)
 
     // Creating a new thread
     pthread_create(&ptid, NULL, &recv_thread, NULL);
+#else
+	cyw43_arch_lwip_begin();
+    lsock = tcp_new();
+    tcp_bind(lsock,IP_ANY_TYPE,5555);
+    tcp_accept(tcp_listen(lsock),accept_fn);
+    cyw43_arch_lwip_end();
 #endif
 }
 
@@ -193,6 +335,17 @@ static void monitor_entry (Thread_SHM * thread)
 
 	thread->callback_end();
 
+}
+
+void monitor_poll()
+{
+	if(csock)
+	{
+		cyw43_arch_lwip_begin();
+		try_recv(csock);
+		try_send(csock);
+		cyw43_arch_lwip_end();
+	}
 }
 
 OROMHandler_type_section
