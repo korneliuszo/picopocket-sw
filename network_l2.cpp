@@ -17,7 +17,7 @@
 
 #include <NEx000.hpp>
 
-NE2000 card_sta;
+//NE2000 card_sta;
 NE1000 card_sta2;
 
 #include "config.hpp"
@@ -124,7 +124,7 @@ extern "C" void cyw43_cb_tcpip_set_link_down(cyw43_t *self, int itf) {
 extern "C" void cyw43_cb_process_ethernet(void *cb_data, int itf, size_t len, const uint8_t *buf) {
 
 	//ne200 input
-	card_sta.rx_packet(buf,len);
+	//card_sta.rx_packet(buf,len);
 	card_sta2.rx_packet(buf,len);
 
 	cyw43_t *self = (cyw43_t*)cb_data;
@@ -156,7 +156,7 @@ void network_init()
 
 	uint8_t sta_mac[6];
 	cyw43_wifi_get_mac(&cyw43_state, CYW43_ITF_STA, sta_mac);
-	card_sta.Connect_ISA(0x300,IRQ_Create_Handle(3),ne1000_sta_tx,sta_mac);
+	//card_sta.Connect_ISA(0x300,IRQ_Create_Handle(3),ne1000_sta_tx,sta_mac);
 	card_sta2.Connect_ISA(0x200,IRQ_Create_Handle(5),ne1000_sta_tx,sta_mac);
 
 }
@@ -165,7 +165,7 @@ void network_poll()
 {
 	cyw43_arch_poll();
 
-	card_sta.update_polled_state();
+	//card_sta.update_polled_state();
 	card_sta2.update_polled_state();
 
 	const char * ssid = Config::WIFI_SSID::val.ival;
