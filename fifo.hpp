@@ -1,4 +1,5 @@
 #pragma once
+#include <stddef.h>
 
 template <typename T, int SIZE>
 class Fifo
@@ -49,23 +50,23 @@ protected:
 			}
 			void put_bytes(const T* buff, ssize_t len,size_t at)
 			{
-				ssize_t len1 = len-(stop-(start+at));
-				if(len1<=0)
+				ssize_t at2 = at-(stop-start);
+				if(at2 < 0)
 				{
-					memcpy(const_cast<T*>(&start[at]),buff,len);
-				}
-				else
-				{
-					ssize_t at2 = at-(stop-start);
-					if(at2 > 0)
+					ssize_t len1 = len-(stop-(start+at));
+					if(len1<=0)
 					{
-						memcpy(const_cast<T*>(&start2[at2]),buff,len);
+						memcpy(const_cast<T*>(&start[at]),buff,len);
 					}
 					else
 					{
-						memcpy(const_cast<T*>(&start[at]),buff,len1);
-						memcpy(const_cast<T*>(start2),&buff[len1],len-len1);
+						memcpy(const_cast<T*>(&start[at]),buff,len-len1);
+						memcpy(const_cast<T*>(start2),&buff[len-len1],len1);
 					}
+				}
+				else
+				{
+					memcpy(const_cast<T*>(&start2[at2]),buff,len);
 				}
 			}
 		};
