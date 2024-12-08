@@ -99,6 +99,9 @@ class monitor():
         self.set_called_params(params)
 
     def jump_to_ram(self,orig_cs,target_cs):
+        parms = self.get_called_params()
+        if parms["irq"] == 0x18 and parms["entry"] == 1:
+            return
         bios = self.getmem(orig_cs,0,2048)
         self.putmem(target_cs,0,bios)
         irqentry =  bios[0x16] | (bios[0x17]<<8)
