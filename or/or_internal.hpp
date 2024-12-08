@@ -60,7 +60,6 @@ struct [[gnu::packed]] STACKCODE8{
 
 struct Thread_SHM : public StaticThread<1024>
 {
-	ENTRY_STATE entry;
 	CMD cmd;
 	void wait_for_exec()
 	{

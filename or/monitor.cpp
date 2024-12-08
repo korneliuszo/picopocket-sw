@@ -278,15 +278,6 @@ static void monitor_entry (Thread_SHM * thread)
 			thread->yield();
 		switch(cmd)
 		{
-		case 0xff: //entry
-		 {
-			auto wbuff = crstate.sendbuff.get_wrbuff();
-
-			wbuff.put_bytes(&thread->entry.entry,1,0);
-			wbuff.put_bytes(&thread->entry.irq_no,1,1);
-			wbuff.put_bytes(thread->entry.regs.data,sizeof(thread->entry.regs.data),2);
-		 }
-		 break;
 		default:
 		 {
 			auto rbuff = crstate.recvbuff.get_rdbuff();

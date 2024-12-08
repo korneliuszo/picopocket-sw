@@ -42,6 +42,7 @@ struct ORHandler : public IoIface::OHandler {
 	};
 	STATE state;
 	Thread_SHM thread_data;
+	ENTRY_STATE entry_state;
 	volatile Thread_SHM::ENTRY thread_entry;
 	volatile bool thread_stopping;
 	volatile bool thread_state = false;
@@ -55,22 +56,22 @@ struct ORHandler : public IoIface::OHandler {
 		default:
 			return;
 		case STATE::READ_ENTRY:
-			thread_data.entry.entry = byte;
+			entry_state.entry = byte;
 			state = STATE::READ_IRQ_NO;
 			return;
 		case STATE::READ_IRQ_NO:
-			thread_data.entry.irq_no = byte;
+			entry_state.irq_no = byte;
 			itr_hndlr=&__start_or_handlers; //could be later with new if
 			bytes = 0;
 			state = STATE::READ_ENTRY_REGS;
 			return;
 		case STATE::READ_ENTRY_REGS:
-			thread_data.entry.regs.data[bytes++] = byte; //no endianess check
-			if(bytes != sizeof(thread_data.entry.regs))
+			entry_state.regs.data[bytes++] = byte; //no endianess check
+			if(bytes != sizeof(entry_state.regs.regs))
 				return;
 			while(itr_hndlr < &__stop_or_handlers)
 			{
-				if(itr_hndlr->decide(thread_data.entry))
+				if(itr_hndlr->decide(entry_state))
 				{
 					thread_data.cmd.command = 0x00; //notYET
 					thread_entry = reinterpret_cast<Thread_SHM::ENTRY>(itr_hndlr->entry);
@@ -131,7 +132,7 @@ struct ORHandler : public IoIface::OHandler {
 				{
 					while(itr_hndlr < &__stop_or_handlers)
 					{
-						if(itr_hndlr->decide(thread_data.entry))
+						if(itr_hndlr->decide(entry_state))
 						{
 							thread_entry = reinterpret_cast<Thread_SHM::ENTRY>(itr_hndlr->entry);
 							thread_stopping = true;
