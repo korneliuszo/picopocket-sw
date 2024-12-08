@@ -8,20 +8,21 @@
 #include "or.hpp"
 #include "or_internal.hpp"
 
+
+extern "C" const volatile uint8_t _binary_optionrom_bin_size[];
+extern "C" const volatile uint8_t _binary_optionrom_bin_end[];
+extern "C" const volatile uint8_t _binary_optionrom_bin_start[];
+
 static uint32_t read_fn(void* obj, uint32_t faddr)
 {
-	volatile uint8_t * arr = static_cast<volatile uint8_t*>(obj);
-	uint8_t ret = arr[faddr];
+	if (faddr>(_binary_optionrom_bin_end-_binary_optionrom_bin_start))
+		return 0xcc; //hope there is at least halt - should not happen
+	uint8_t ret = _binary_optionrom_bin_start[faddr];
 	return ret;
 }
 
 static void nop_wrfn(void* obj, uint32_t faddr, uint8_t data) {}
 
-extern "C" const uint8_t _binary_optionrom_bin_start[];
-extern "C" const uint8_t _binary_optionrom_bin_size[];
-extern "C" const uint8_t _binary_optionrom_bin_end[];
-
-volatile uint8_t monitor_data_window[2048];
 
 extern const IoIface::Handler optionrom_handler;
 
@@ -206,18 +207,17 @@ IoIface::Handler optionrom_handler = {
 
 void optionrom_install(Thread * main)
 {
-	memcpy((void *)monitor_data_window,(const void*)_binary_optionrom_bin_start,sizeof(monitor_data_window));
 
 	monitor_install(main);
 	int19_install(main);
 
 	add_device({
 					.start = 0xDC000,
-					.size = (uint32_t)sizeof(monitor_data_window),
+					.size = (uint32_t)(_binary_optionrom_bin_end-_binary_optionrom_bin_start),
 					.type = Device::Type::MEM,
 					.rdfn = read_fn,
 					.wrfn = nop_wrfn,
-					.obj = (void*)monitor_data_window,
+					.obj = nullptr,
 	});
 }
 

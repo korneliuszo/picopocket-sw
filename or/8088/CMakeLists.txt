@@ -15,10 +15,16 @@ add_custom_target(
 	BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/optionrom.bin
 )
 
+if(PICOPOCKET_SIM)
+set(BFDARG elf64-x86-64)
+else()
+set(BFDARG elf32-littlearm)
+endif()
+
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/optionrom.o
 	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-	COMMAND ${CMAKE_LINKER} -r -b binary -o optionrom.o optionrom.bin
+	COMMAND ${CMAKE_OBJCOPY} -I binary -O ${BFDARG} --rename-section .data=.core1_static optionrom.bin optionrom.o
 	#places in data
 	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/optionrom.bin
 )
