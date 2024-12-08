@@ -14,6 +14,7 @@
 #include "lwip/err.h"
 #include "lwip/tcp.h"
 #endif
+#include <atomic>
 
 extern const
 OROMHandler monitor_handler;
@@ -27,6 +28,7 @@ using PCB = tcp_pcb*;
 struct Recv_state {
 	Fifo<uint8_t,2048> recvbuff;
 	Fifo<uint8_t,2048> sendbuff;
+	std::atomic<bool> sig_rst;
 };
 
 static volatile PCB lsock;
@@ -119,14 +121,24 @@ void try_recv(struct tcp_pcb *tpcb)
 }
 
 static void
+error_fn(void *arg, err_t err)
+{
+	crstate.sig_rst = true;
+	csock = nullptr;
+	if(recv_pbuff)
+		pbuf_free(recv_pbuff);
+	recv_pbuff=nullptr;
+}
+
+static void
 sock_close(struct tcp_pcb *tpcb)
 {
-	csock = nullptr;
 	tcp_arg(tpcb, NULL);
 	tcp_sent(tpcb, NULL);
 	tcp_recv(tpcb, NULL);
 	tcp_err(tpcb, NULL);
 	tcp_poll(tpcb, NULL, 0);
+	error_fn(nullptr,ERR_OK);
 
 	tcp_close(tpcb);
 }
@@ -134,8 +146,7 @@ sock_close(struct tcp_pcb *tpcb)
 static err_t
 sent_fn(void *arg, struct tcp_pcb *tpcb, u16_t len)
 {
-	try_send(tpcb);
-	if(!arg && !crstate.sendbuff.fifo_check())
+	if(!csock)
 		sock_close(tpcb);
 	return ERR_OK;
 }
@@ -143,15 +154,9 @@ sent_fn(void *arg, struct tcp_pcb *tpcb, u16_t len)
 static err_t
 poll_fn(void *arg, struct tcp_pcb *tpcb)
 {
-	if(!arg && !crstate.sendbuff.fifo_check())
+	if(!csock)
 		sock_close(tpcb);
 	return ERR_OK;
-}
-
-static void
-error_fn(void *arg, err_t err)
-{
-	csock = nullptr;
 }
 
 static err_t
@@ -160,19 +165,15 @@ recv_fn(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 	if (p == NULL)
 	{
 	    /* remote host closed connection */
-		tcp_arg(tpcb, NULL);
-		if(crstate.sendbuff.fifo_check())
-			try_send(tpcb);
-		else
-			sock_close(tpcb);
-		return err;
+		sock_close(tpcb);
+		return ERR_OK;
 	}
 	if(err != ERR_OK) {
 		/* cleanup, for unknown reason */
 		if (p != NULL) {
 			pbuf_free(p);
 		}
-		tcp_arg(tpcb, NULL);
+		error_fn(nullptr, err);
 		return err;
 	}
 	if(recv_pbuff)
@@ -196,7 +197,8 @@ static err_t accept_fn(void *arg, struct tcp_pcb *newpcb, err_t err)
 		return ERR_MEM;
 	}
 	csock = newpcb;
-	tcp_arg(newpcb, csock);
+	off = 0;
+	tcp_arg(nullptr, csock);
 	tcp_recv(newpcb, recv_fn);
 	tcp_err(newpcb, error_fn);
 	tcp_poll(newpcb, poll_fn, 0);
@@ -261,8 +263,17 @@ static void monitor_entry (Thread_SHM * thread)
 
 	while(1)
 	{
+		restart:
 		while(crstate.recvbuff.fifo_check()<9)
+		{
+			if(crstate.sig_rst)
+			{
+				crstate.recvbuff.clear_from_rd();
+				crstate.sig_rst = false;
+				goto restart;
+			}
 			thread->yield();
+		}
 		volatile uint32_t slen,rlen;
 		volatile uint8_t cmd;
 		{
@@ -273,7 +284,15 @@ static void monitor_entry (Thread_SHM * thread)
 		}
 		crstate.recvbuff.commit_rdbuff(9);
 		while(crstate.recvbuff.fifo_check()<slen)
+		{
+			if(crstate.sig_rst)
+			{
+				crstate.recvbuff.clear_from_rd();
+				crstate.sig_rst = false;
+				goto restart;
+			}
 			thread->yield();
+		}
 		while(crstate.sendbuff.fifo_free()<rlen)
 			thread->yield();
 		switch(cmd)
@@ -336,6 +355,10 @@ void monitor_poll()
 		try_recv(csock);
 		try_send(csock);
 		cyw43_arch_lwip_end();
+	}
+	else
+	{
+		crstate.sendbuff.clear_from_rd();
 	}
 }
 
