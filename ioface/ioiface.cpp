@@ -111,7 +111,7 @@ IoIface::Handler_return_t IoIface::response_tristate()
 void IoIface::ioiface_install()
 {
 	add_device({
-					.start = 0x88,
+					.start = 0xF8,
 					.size = (uint32_t)8,
 					.type = Device::Type::IO,
 					.rdfn = read_fn,

@@ -13,7 +13,7 @@ call_from_utilities:
 org 0x14
 public port_no
 port_no:
-	dw 0x88
+	dw 0xF8
 org 0x16
 	dw ptr irqentry
 org 0x20
