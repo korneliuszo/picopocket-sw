@@ -61,7 +61,7 @@ class monitor():
         code = bytes([0xCD, irq, 0xCB])
         return self.stackcode8(regs,code)
     def get_called_params(self):
-        ret=self.msg(0xff,b'',1+1+15*2+1)
+        ret=self.msg(0x0A,b'',1+1+15*2+1)
         keys = ("entry","irq","es","ds","di","si","bp","bx","dx","cx","ax", "fl", "chain", "ip", "cs","rf","retcode")
         values = struct.unpack("<BBHHHHHHHHHHIHHHB",ret)
         d = dict(zip(keys,values))
