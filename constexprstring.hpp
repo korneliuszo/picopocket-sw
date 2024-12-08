@@ -18,9 +18,9 @@ constexpr CStr<LEN> fxdintz(UINT v)
 {
 	CStr<LEN> ret = {};
 	UINT msb = 1;
-	for(uint i=0;i<LEN;i++)
+	for(std::size_t i=0;i<LEN;i++)
 		msb*=10;
-	for(uint i=0;i<LEN;i++)
+	for(std::size_t i=0;i<LEN;i++)
 	{
 		msb=msb/10;
 		ret[i] = '0' + (v / msb);
