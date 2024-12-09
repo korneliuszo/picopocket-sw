@@ -31,48 +31,13 @@ struct Recv_state {
 	std::atomic<bool> sig_rst;
 };
 
-static volatile PCB lsock;
+static volatile PCB lsock, csock;
 static Recv_state crstate;
 
 
 
 #ifdef PICOPOCKET_SIM
-static void* recv_thread(void* arg)
-{
-	while(1)
-	{
-		PCB connfd = accept4(lsock, nullptr, nullptr, 0);
-		assert(connfd>=0);
-
-		while (1)
-		{
-			{
-				auto buff = crstate.recvbuff.get_wrbuff();
-				int len = recv(connfd, (void*) buff.start,
-						buff.stop - buff.start,
-						MSG_DONTWAIT);
-				if (len == -1 && (errno != EAGAIN && errno != EWOULDBLOCK))
-					break;
-				if (len > 0)
-					crstate.recvbuff.commit_wrbuff(len);
-			}
-			while(crstate.sendbuff.fifo_check()){
-				auto buff = crstate.sendbuff.get_rdbuff();
-				int len = send(connfd, (void*) buff.start,
-						buff.stop - buff.start,
-						0);
-				if (len < 0)
-					break;
-				if (len > 0)
-					crstate.sendbuff.commit_rdbuff(len);
-			}
-		}
-		close(connfd);
-	}
-}
 #else
-
-tcp_pcb * csock;
 
 static void
 try_send(struct tcp_pcb *tpcb)
@@ -211,7 +176,7 @@ static err_t accept_fn(void *arg, struct tcp_pcb *newpcb, err_t err)
 void monitor_install(Thread * main)
 {
 #ifdef PICOPOCKET_SIM
-	lsock = socket(AF_INET, SOCK_STREAM, 0);
+	lsock = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 	if (lsock < 0)
 		exit(1);
 
@@ -226,12 +191,9 @@ void monitor_install(Thread * main)
 		exit(1);
     if ((listen(lsock, 2)) != 0) {
 		exit(1);
+	//if (fcntl(lsock, F_SETFL, fcntl(lsock, F_GETFL, 0) | O_NONBLOCK) == -1)
+	//	exit(1);
     }
-
-    pthread_t ptid;
-
-    // Creating a new thread
-    pthread_create(&ptid, NULL, &recv_thread, NULL);
 #else
 	cyw43_arch_lwip_begin();
     lsock = tcp_new();
@@ -349,6 +311,7 @@ static void monitor_entry (Thread_SHM * thread)
 
 void monitor_poll()
 {
+#ifndef PICOPOCKET_SIM
 	if(csock)
 	{
 		cyw43_arch_lwip_begin();
@@ -360,6 +323,57 @@ void monitor_poll()
 	{
 		crstate.sendbuff.clear_from_rd();
 	}
+#else
+
+	if(!csock)
+	{
+		crstate.sendbuff.clear_from_rd();
+		PCB connfd = accept4(lsock, nullptr, nullptr, SOCK_NONBLOCK);
+		if(connfd > 0)
+			csock = connfd;
+	}
+	if(csock)
+	{
+		{
+			auto buff = crstate.recvbuff.get_wrbuff();
+			int len = recv(csock, (void*) buff.start,
+					buff.stop - buff.start,
+					0);
+			if (len == -1 && (errno != EAGAIN && errno != EWOULDBLOCK))
+			{
+				close(csock);
+				csock = 0;
+				crstate.sig_rst = true;
+				return;
+			}
+			if (len == 0 && buff.stop - buff.start !=0)
+			{
+				close(csock);
+				csock = 0;
+				crstate.sig_rst = true;
+				return;
+			}
+			if (len > 0)
+				crstate.recvbuff.commit_wrbuff(len);
+		}
+		if(crstate.sendbuff.fifo_check()){
+			auto buff = crstate.sendbuff.get_rdbuff();
+			int len = send(csock, (void*) buff.start,
+					buff.stop - buff.start,
+					0);
+			if (len < 0)
+			{
+				close(csock);
+				csock = 0;
+				crstate.sig_rst = true;
+				return;
+			}
+			if (len > 0)
+				crstate.sendbuff.commit_rdbuff(len);
+		}
+	}
+
+#endif
 }
 
 OROMHandler_type_section
