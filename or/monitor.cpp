@@ -214,15 +214,18 @@ static bool monitor_decide(const ENTRY_STATE & state)
 
 static void monitor_entry (Thread_SHM * thread)
 {
-	bool autoboot = Config::MONITOR_AUTOBOOT::val.ival;
-	thread->putstr("PicoPocket monitor: press M to ");
-	if(autoboot)
-		thread->putstr("stop ");
-	thread->putstr("entry\r\n");
-	if((thread->getch() != 'm') ^ autoboot)
-		thread->callback_end(); //nonreturn
-	thread->putstr("Monitor entry\r\n");
-
+	auto entry = thread->get_entry();
+	if(entry.irq_no == 0x19)
+	{
+		bool autoboot = Config::MONITOR_AUTOBOOT::val.ival;
+		thread->putstr("PicoPocket monitor: press M to ");
+		if(autoboot)
+			thread->putstr("stop ");
+		thread->putstr("entry\r\n");
+		if((thread->getch() != 'm') ^ autoboot)
+			thread->callback_end(); //nonreturn
+		thread->putstr("Monitor entry\r\n");
+	}
 	while(1)
 	{
 		restart:
