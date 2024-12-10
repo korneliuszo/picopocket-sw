@@ -1,8 +1,5 @@
 #include "or_internal.hpp"
 
-extern const
-OROMHandler int19_handler;
-
 void int19_install(Thread * main)
 {
 
@@ -38,8 +35,7 @@ static void int19_entry (Thread_SHM * thread)
 	thread->callback_end();
 }
 
-OROMHandler_type_section
-OROMHandler int19_handler = {
+const OROMHandler int19_handler = {
 		int19_decide,
 		int19_entry
 };

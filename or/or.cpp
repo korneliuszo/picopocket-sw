@@ -26,8 +26,11 @@ static void nop_wrfn(void* obj, uint32_t faddr, uint8_t data) {}
 
 extern const IoIface::Handler optionrom_handler;
 
-extern "C" OROMHandler __start_or_handlers;
-extern "C" OROMHandler __stop_or_handlers;
+const OROMHandler * const handlers[] =
+{
+		&int19_handler,
+		&monitor_handler,
+};
 
 struct ORHandler : public IoIface::OHandler {
 	enum class STATE {
@@ -46,7 +49,7 @@ struct ORHandler : public IoIface::OHandler {
 	volatile Thread_SHM::ENTRY thread_entry;
 	volatile bool thread_stopping;
 	volatile bool thread_state = false;
-	OROMHandler *itr_hndlr;
+	const OROMHandler * const *itr_hndlr;
 	IoIface::Arbitration arbiter;
 	int bytes;
 	virtual void wr_byte(uint8_t byte)
@@ -61,7 +64,7 @@ struct ORHandler : public IoIface::OHandler {
 			return;
 		case STATE::READ_IRQ_NO:
 			entry_state.irq_no = byte;
-			itr_hndlr=&__start_or_handlers; //could be later with new if
+			itr_hndlr=handlers; //could be later with new if
 			bytes = 0;
 			state = STATE::READ_ENTRY_REGS;
 			return;
@@ -69,12 +72,12 @@ struct ORHandler : public IoIface::OHandler {
 			entry_state.regs.data[bytes++] = byte; //no endianess check
 			if(bytes != sizeof(entry_state.regs.regs))
 				return;
-			while(itr_hndlr < &__stop_or_handlers)
+			while(itr_hndlr < &handlers[sizeof(handlers)/sizeof(handlers[0])])
 			{
-				if(itr_hndlr->decide(entry_state))
+				if((*itr_hndlr)->decide(entry_state))
 				{
 					thread_data.cmd.command = 0x00; //notYET
-					thread_entry = reinterpret_cast<Thread_SHM::ENTRY>(itr_hndlr->entry);
+					thread_entry = reinterpret_cast<Thread_SHM::ENTRY>((*itr_hndlr)->entry);
 					itr_hndlr++;
 					arbiter.reset();
 					state = STATE::ARBITRATION;
@@ -130,11 +133,11 @@ struct ORHandler : public IoIface::OHandler {
 			{
 				if(cmd == 0x03) //continue boot
 				{
-					while(itr_hndlr < &__stop_or_handlers)
+					while(itr_hndlr < &handlers[sizeof(handlers)/sizeof(handlers[0])])
 					{
-						if(itr_hndlr->decide(entry_state))
+						if((*itr_hndlr)->decide(entry_state))
 						{
-							thread_entry = reinterpret_cast<Thread_SHM::ENTRY>(itr_hndlr->entry);
+							thread_entry = reinterpret_cast<Thread_SHM::ENTRY>((*itr_hndlr)->entry);
 							thread_stopping = true;
 							itr_hndlr++;
 							return 0x00; //override

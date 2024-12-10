@@ -211,7 +211,6 @@ struct Thread_SHM : public StaticThread<1024>
 
 };
 
-#define OROMHandler_type_section [[gnu::section("or_handlers"),gnu::used]] const
 struct OROMHandler {
 	bool (*decide)(const ENTRY_STATE &);
 	void (*entry)(Thread_SHM *);
@@ -219,5 +218,7 @@ struct OROMHandler {
 
 void monitor_install(Thread * main);
 void monitor_poll();
+extern const OROMHandler monitor_handler;
 
 void int19_install(Thread * main);
+extern const OROMHandler int19_handler;

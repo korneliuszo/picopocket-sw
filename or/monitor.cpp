@@ -16,9 +16,6 @@
 #endif
 #include <atomic>
 
-extern const
-OROMHandler monitor_handler;
-
 #ifdef PICOPOCKET_SIM
 using PCB = int;
 #else
@@ -379,8 +376,7 @@ void monitor_poll()
 #endif
 }
 
-OROMHandler_type_section
-OROMHandler monitor_handler = {
+const OROMHandler monitor_handler = {
 		monitor_decide,
 		monitor_entry
 };
