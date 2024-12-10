@@ -88,6 +88,9 @@ class monitor():
                 )
         self.msg(0x02,cmd,0)
 
+    def install_irq(self,no):
+        return struct.unpack("<I",self.msg(0x08,struct.pack("<B",no),4))[0]
+
     def install_13h(self):
         return struct.unpack("<I",self.msg(0x08,struct.pack("<B",0x13),4))[0]
     def return_boot(self):
