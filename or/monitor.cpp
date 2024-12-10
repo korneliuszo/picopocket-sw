@@ -201,12 +201,15 @@ void monitor_install(Thread * main)
 }
 
 
+static bool monitor_callback;
 
 static bool monitor_decide(const ENTRY_STATE & state)
 {
 	if(state.entry == 0) //boot
 		return false;
-	return true;
+	if(state.entry == 1 && state.irq_no == 0x19)
+		return true;
+	return monitor_callback;
 }
 
 static void monitor_entry (Thread_SHM * thread)
@@ -219,7 +222,8 @@ static void monitor_entry (Thread_SHM * thread)
 		if(autoboot)
 			thread->putstr("stop ");
 		thread->putstr("entry\r\n");
-		if((thread->getch() != 'm') ^ autoboot)
+		monitor_callback = (thread->getch() == 'm') ^ autoboot;
+		if(!monitor_callback)
 			thread->callback_end(); //nonreturn
 		thread->putstr("Monitor entry\r\n");
 	}
