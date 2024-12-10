@@ -96,6 +96,8 @@ class monitor():
     def return_boot(self):
         self.msg(0x03,b'',0)
     def chain(self,entry):
+        if entry == 0:
+            return
         params = self.get_called_params()
         params["chain"] = entry
         params["retcode"] = 0

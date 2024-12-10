@@ -85,12 +85,67 @@ struct Thread_SHM : public StaticThread<1024>
 			wait_for_exec();
 		}
 	}
-	void set_return(ENTRY_STATE entry)
+	void putmem(uint16_t seg, uint16_t addr, uint8_t* data, uint16_t len)
+	{
+		uint8_t param[] = {
+				(uint8_t)(seg>>8),
+				(uint8_t)(seg>>0),
+				(uint8_t)(addr>>8),
+				(uint8_t)(addr>>0),
+				(uint8_t)(len>>8),
+				(uint8_t)(len>>0),
+		};		BuffList send[] = {
+				{
+						param,
+						sizeof(param),
+						&send[1]
+				},
+				{
+						data,
+						len,
+						nullptr
+				}
+		};
+		{
+			cmd.send = send;
+			cmd.recv = nullptr;
+			cmd.command = 0x06;
+			wait_for_exec();
+		}
+	}
+	void getmem(uint16_t seg, uint16_t addr, uint8_t* data, uint16_t len)
+		{
+		uint8_t param[] = {
+				(uint8_t)(seg>>8),
+				(uint8_t)(seg>>0),
+				(uint8_t)(addr>>8),
+				(uint8_t)(addr>>0),
+				(uint8_t)(len>>8),
+				(uint8_t)(len>>0),
+		};
+		BuffList recv = {
+				data,
+				len,
+				nullptr
+		};
+		BuffList send = {
+				param,
+				sizeof(param),
+				nullptr
+		};
+		{
+			cmd.send = &send;
+			cmd.recv = &recv;
+			cmd.command = 0x07;
+			wait_for_exec();
+		}
+	}
+	void set_return(IRQ_REGS entry)
 	{
 		cmd.recv = nullptr;
 		BuffList send = {
-				entry.regs.data,
-				sizeof(entry.regs.data),
+				entry.data,
+				sizeof(entry.data),
 				nullptr
 		};
 		cmd.send = &send;
@@ -103,7 +158,7 @@ struct Thread_SHM : public StaticThread<1024>
 		entry.regs.regs.ph1 = chain;
 		entry.regs.regs.ph2 = chain>>16;
 		entry.regs.regs.rettype = 0x00;
-		set_return(entry);
+		set_return(entry.regs);
 	}
 	void callback_end()
 	{
@@ -222,3 +277,6 @@ extern const OROMHandler monitor_handler;
 
 void int19_install(Thread * main);
 extern const OROMHandler int19_handler;
+
+void ramdisk_install(Thread * main);
+extern const OROMHandler ramdisk_handler;

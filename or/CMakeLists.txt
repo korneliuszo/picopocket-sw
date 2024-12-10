@@ -4,6 +4,7 @@ add_library(or
 	or.cpp
 	int19_install.cpp
 	monitor.cpp
+	ramdisk.cpp
 )
 	
 if(PICOPOCKET_SIM)

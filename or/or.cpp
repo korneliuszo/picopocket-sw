@@ -7,7 +7,7 @@
 #include <ioiface.hpp>
 #include "or.hpp"
 #include "or_internal.hpp"
-
+#include "config.hpp"
 
 extern "C" const volatile uint8_t _binary_optionrom_bin_size[];
 extern "C" const volatile uint8_t _binary_optionrom_bin_end[];
@@ -29,6 +29,7 @@ extern const IoIface::Handler optionrom_handler;
 const OROMHandler * const handlers[] =
 {
 		&int19_handler,
+		&ramdisk_handler,
 		&monitor_handler,
 };
 
@@ -214,9 +215,10 @@ void optionrom_install(Thread * main)
 
 	monitor_install(main);
 	int19_install(main);
+	ramdisk_install(main);
 
 	add_device({
-					.start = 0xDC000,
+					.start = (uint32_t)Config::BIOS_SEGMENT::val.ival<<4,
 					.size = (uint32_t)(_binary_optionrom_bin_end-_binary_optionrom_bin_start),
 					.type = Device::Type::MEM,
 					.rdfn = read_fn,

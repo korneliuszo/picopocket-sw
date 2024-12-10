@@ -21,6 +21,7 @@ enum class UID : uint16_t {
 	BIOS_DIR,
 		BIOS_SEGMENT,
 		MONITOR_AUTOBOOT,
+		RAMDISK_INSTALL,
 };
 
 constexpr char USB_SERIAL_NO_DEFAULT[] = "NONAME";
@@ -167,7 +168,7 @@ public:
 	static constexpr char name[] = "WIFI_DIR";
 };
 
-class BIOS_SEGMENT : public Impl::CElem<BIOS_SEGMENT,UID::BIOS_SEGMENT,Impl::HexInt<BIOS_SEGMENT,uint16_t>,0xc800>{
+class BIOS_SEGMENT : public Impl::CElem<BIOS_SEGMENT,UID::BIOS_SEGMENT,Impl::HexInt<BIOS_SEGMENT,uint16_t>,0xDC00>{
 public:
 	static constexpr bool coldboot_required = true;
 	static constexpr char help[] = "Bios segment address";
@@ -188,7 +189,14 @@ public:
 	static constexpr char name[] = "MONITOR_AUTOBOOT";
 };
 
-class BiosDir : public Impl::Dir<BiosDir,UID::BIOS_DIR,BIOS_SEGMENT,MONITOR_AUTOBOOT>{
+class RAMDISK_INSTALL : public Impl::CElem<MONITOR_AUTOBOOT,UID::RAMDISK_INSTALL,Impl::Bool,true>{
+public:
+	static constexpr bool coldboot_required = true;
+	static constexpr char help[] = "ramdisk install";
+	static constexpr char name[] = "RAMDISK_INSTALL";
+};
+
+class BiosDir : public Impl::Dir<BiosDir,UID::BIOS_DIR,BIOS_SEGMENT,MONITOR_AUTOBOOT,RAMDISK_INSTALL>{
 public:
 	static constexpr char help[] = "bios dir";
 	static constexpr char name[] = "bios Dir";
