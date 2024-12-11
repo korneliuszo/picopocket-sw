@@ -29,6 +29,7 @@ extern const IoIface::Handler optionrom_handler;
 const OROMHandler * const handlers[] =
 {
 		&int19_handler,
+		&config_handler,
 		&ramdisk_handler,
 		&monitor_handler,
 };
@@ -216,6 +217,7 @@ void optionrom_install(Thread * main)
 	monitor_install(main);
 	int19_install(main);
 	ramdisk_install(main);
+	config_install(main);
 
 	add_device({
 					.start = (uint32_t)Config::BIOS_SEGMENT::val.ival<<4,

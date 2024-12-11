@@ -1,6 +1,7 @@
 #include "or_internal.hpp"
 #include "config.hpp"
 #include <psram_pio.hpp>
+#include <ar1021.hpp>
 
 
 //8MB CHS
@@ -10,6 +11,7 @@ static constexpr size_t CYLINDERS = 256;
 
 void ramdisk_install(Thread * main)
 {
+	AR1021::AR1021::init();
 	PSRAM::PSRAM::init();
 }
 
@@ -57,11 +59,11 @@ static void set_dap(Thread_SHM * thread, const ENTRY_STATE& params, DAP * dap)
 
 static uint8_t ramdisk_sector[512];
 
-void ramdisk_handle(Thread_SHM * thread, uint8_t drive_no)
+bool ramdisk_handle(Thread_SHM * thread, uint8_t drive_no)
 {
 	auto params = thread->get_entry();
 	if ((params.regs.regs.dx & 0xff) != drive_no)
-		return;
+		return false;
 	switch(params.regs.regs.ax>>8)
 	{
 	case 0x00: // reset
@@ -227,6 +229,7 @@ void ramdisk_handle(Thread_SHM * thread, uint8_t drive_no)
 	}
 	params.regs.regs.rettype = 1;
 	thread->set_return(params.regs);
+	return true;
 }
 
 static void ramdisk_entry (Thread_SHM * thread)
@@ -234,6 +237,8 @@ static void ramdisk_entry (Thread_SHM * thread)
 	auto entry = thread->get_entry();
 	if(entry.irq_no == 0x19)
 	{
+		if(entry.regs.regs.rettype == 0)
+			thread->callback_end();
 		bool autoboot = Config::RAMDISK_INSTALL::val.ival;
 		thread->putstr("PicoPocket ramdisk: press R to ");
 		if(autoboot)
