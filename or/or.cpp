@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
-#include <isa_worker.hpp>
+#include "isa_worker.hpp"
 #include <ioiface.hpp>
 #include "or.hpp"
 #include "or_internal.hpp"
@@ -28,10 +28,10 @@ extern const IoIface::Handler optionrom_handler;
 
 const OROMHandler * const handlers[] =
 {
-		&int19_handler,
 		&config_handler,
 		&ramdisk_handler,
 		&monitor_handler,
+		&int19_handler,
 };
 
 struct ORHandler : public IoIface::OHandler {

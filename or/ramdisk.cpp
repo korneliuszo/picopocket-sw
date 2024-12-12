@@ -1,7 +1,7 @@
 #include "or_internal.hpp"
 #include "config.hpp"
-#include <psram_pio.hpp>
-#include <ar1021.hpp>
+#include "psram_pio.hpp"
+#include "ar1021.hpp"
 
 
 //8MB CHS

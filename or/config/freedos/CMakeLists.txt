@@ -30,7 +30,7 @@ endif()
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/fdoskernel.o
 	WORKING_DIRECTORY ${freedos_kernel_zip_SOURCE_DIR}
-	COMMAND ${CMAKE_OBJCOPY} -I binary -O ${BFDARG} --rename-section .data=.flash bin/KERNEL.SYS ${CMAKE_CURRENT_BINARY_DIR}/fdoskernel.o
+	COMMAND ${CMAKE_OBJCOPY} -I binary -O ${BFDARG} --rename-section .data=.flashdata bin/KERNEL.SYS ${CMAKE_CURRENT_BINARY_DIR}/fdoskernel.o
 	#places in data
 	DEPENDS ${freedos_kernel_zip_SOURCE_DIR}/bin/KERNEL.SYS
 )

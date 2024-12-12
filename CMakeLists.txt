@@ -10,7 +10,6 @@ project(picopocket-sw)
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/picow-http)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/ne2000xt)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/snappy)
 
 add_subdirectory(ioface)
 add_subdirectory(or)

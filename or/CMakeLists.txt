@@ -27,7 +27,6 @@ target_link_libraries(or
 		ioiface
 		freedos_kernel
 		config_img
-		snappy
 		${OR_HWLIBS}
 	PUBLIC
 		jmpcoro
