@@ -51,5 +51,5 @@ if __name__ == "__main__":
     i=i.resize(cga.resolution())
     i=i.convert("1")
     cga.display(i)        
-        
+    cga.m.sync()
     

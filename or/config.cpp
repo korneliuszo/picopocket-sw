@@ -31,6 +31,8 @@ static void config_entry (Thread_SHM * thread)
 	auto entry = thread->get_entry();
 	if(entry.irq_no == 0x19)
 	{
+		if(entry.regs.regs.rettype != 0xff)
+			thread->callback_end();
 		thread->putstr("PicoPocket config: press C to ");
 		thread->putstr("enter\r\n");
 		config_callback = (thread->getch() == 'c');

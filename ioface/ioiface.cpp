@@ -31,6 +31,7 @@ static uint32_t read_fn(void* obj, uint32_t faddr)
 	}
 }
 
+[[gnu::section(".core1_static")]]
 static void write_fn(void* obj, uint32_t faddr, uint8_t data)
 {
 	uint8_t pipe = faddr>>1;

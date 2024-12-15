@@ -37,8 +37,8 @@ picow_http_gen_handlers(picopocket-sw
 
 pico_set_program_name(picopocket-sw "picopocket-sw")
 pico_set_program_version(picopocket-sw "0.1")
-pico_set_binary_type(picopocket-sw copy_to_ram)
-pico_set_linker_script(picopocket-sw ${CMAKE_CURRENT_LIST_DIR}/ram_scratchy_saved.ld)
+pico_set_binary_type(picopocket-sw default)
+pico_set_linker_script(picopocket-sw ${CMAKE_CURRENT_LIST_DIR}/default_scratchy_saved.ld)
 pico_add_extra_outputs(picopocket-sw)
 
 target_link_libraries(picopocket-sw PRIVATE

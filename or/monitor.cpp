@@ -217,7 +217,7 @@ static void monitor_entry (Thread_SHM * thread)
 	auto entry = thread->get_entry();
 	if(entry.irq_no == 0x19)
 	{
-		if(entry.regs.regs.rettype == 0)
+		if(entry.regs.regs.rettype != 0xFF)
 			thread->callback_end();
 		bool autoboot = Config::MONITOR_AUTOBOOT::val.ival;
 		thread->putstr("PicoPocket monitor: press M to ");

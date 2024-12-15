@@ -13,6 +13,7 @@ extern "C" const volatile uint8_t _binary_optionrom_bin_size[];
 extern "C" const volatile uint8_t _binary_optionrom_bin_end[];
 extern "C" const volatile uint8_t _binary_optionrom_bin_start[];
 
+[[gnu::section(".core1_static")]]
 static uint32_t read_fn(void* obj, uint32_t faddr)
 {
 	if (faddr>(_binary_optionrom_bin_end-_binary_optionrom_bin_start))
@@ -21,6 +22,7 @@ static uint32_t read_fn(void* obj, uint32_t faddr)
 	return ret;
 }
 
+[[gnu::section(".core1_static")]]
 static void nop_wrfn(void* obj, uint32_t faddr, uint8_t data) {}
 
 

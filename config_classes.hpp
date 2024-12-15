@@ -376,6 +376,7 @@ private:
 	}
 	static_assert(savesize() < SECTOR_SIZE);
 public:
+	typedef std::tuple<Flash_Config ...> Saved;
 	static void load()
 	{
 		Header * readout = (Header*)find_last();
@@ -428,6 +429,7 @@ class NopSaved {
 private:
 
 public:
+	typedef std::tuple<Flash_Config ...> Saved;
 	static void load()
 	{
 	}
@@ -440,9 +442,6 @@ public:
 template<class Saved, class Basic_Config>
 class BasicConfig {
 public:
-	template<class ... Ts>
-	using Flash_Saved=Saved;
-
 	typedef Saved TSaved;
 
 private:
@@ -455,12 +454,6 @@ private:
 	static constexpr std::size_t FIELD_COUNT_fn(std::tuple<Ts...> _)
 	{
 		return sizeof ... (Ts);
-	}
-
-	template<class Entry, class ... Ts>
-	static constexpr bool to_flash_fn(Entry _1,Flash_Saved<Ts...> _2)
-	{
-		return ((std::is_same<Entry,Ts>::value == true) || ...);
 	}
 
 	template<class Entry, class ... Ts>
@@ -513,7 +506,7 @@ public:
 		: uid(Entry::uid16)
 		, parent_uid(parent_fn(Entry{},typename Basic_Config::Ea{}))
 		, coldboot_required(Entry::coldboot_required)
-		, to_flash(to_flash_fn(Entry{},Saved{}))
+		, to_flash(is_inside_tuple(Entry{},typename TSaved::Saved{}))
 		, is_directory(Entry::is_directory)
 		, help(Entry::help)
 		, name(Entry::name)

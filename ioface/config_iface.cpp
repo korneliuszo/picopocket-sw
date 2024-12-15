@@ -1,10 +1,15 @@
 #include "ioiface.hpp"
 #include "config_iface.hpp"
 #include "../config.hpp"
+#ifndef PICOPOCKET_SIM
+#include "pico/multicore.h"
+#endif
 
 void install_config_iface()
 {
-
+#ifndef PICOPOCKET_SIM
+	multicore_lockout_victim_init();
+#endif
 }
 
 struct ConfigHandler : public IoIface::OHandler {
@@ -72,7 +77,13 @@ struct ConfigHandler : public IoIface::OHandler {
 				cmd = byte;
 				return;
 			case 0x07:
+#ifndef PICOPOCKET_SIM
+				multicore_lockout_start_blocking();
+#endif
 				Config::IO_Access::TSaved::save();
+#ifndef PICOPOCKET_SIM
+				multicore_lockout_end_blocking();
+#endif
 				state = STATE::READ_CMD;
 				return;
 			case 0x08:

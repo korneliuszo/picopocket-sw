@@ -8,6 +8,7 @@
 #include "device/usbd_pvt.h"
 #include "hardware/gpio.h"
 #include "config.hpp"
+#include "isa_worker.hpp"
 
 class Config_Itf {
 	static inline uint8_t itf_num;
@@ -116,8 +117,14 @@ class Config_Itf {
 					Config::USB_Access::TSaved::load();
 					return tud_control_status(rhport, request);
 				case 1:
+				 {
+					wait_for_flash = true;
+					uint32_t save = save_and_disable_interrupts();
 					Config::USB_Access::TSaved::save();
+					restore_interrupts(save);
+					wait_for_flash = false;
 					return tud_control_status(rhport, request);
+				 }
 				}
 				return false;
 			}

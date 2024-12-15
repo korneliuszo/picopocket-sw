@@ -101,7 +101,7 @@ int start(uint16_t irq, IRQ_DATA far * params)
 {
 	unsigned port_no = port_nog;
 	uint8_t sync_counter = 0;
-	uint8_t rettype = irq == 0x01 ? 0x01 : 0x02;
+	uint8_t rettype = irq == 0x00 ? 0x02 : 0xFF;
 	unsigned codeplace = (params->ph2 - (unsigned)&irqentry)/3-1; // call near takes 3 bytes
 	outp(port_no+1,0x01);
 	outp(port_no,irq);
@@ -123,6 +123,8 @@ int start(uint16_t irq, IRQ_DATA far * params)
 		{
 		case 0x03:
 			outp(port_no+1,0x00); //TODO: full isolation
+			if(rettype == 0xff)
+				while(1); //break
 			return retcode_map[rettype];
 		default:
 			while(1); //break
