@@ -8,9 +8,9 @@ add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/config.img
 	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 	COMMAND 
-	    dd if=/dev/zero of=config.img bs=1k count=2048
+	    dd if=/dev/zero of=config.img bs=1k count=512
 	COMMAND
-		mformat -i config.img -t 64 -h 2 -s 32 -L12 ::
+		mformat -i config.img -t 16 -h 2 -s 32 -L12 ::
 	COMMAND
 		mcopy -i config.img ${freedos_command_zip_SOURCE_DIR}/BIN/COMMAND.COM ::
 	COMMAND
@@ -27,16 +27,6 @@ add_custom_command(
 		${microweb_boot_disk_BINARY_DIR}/MICROWEB
 )
 
-add_custom_command(
-	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/config.img.spy
-	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-	COMMAND 
-		snappy -c ${CMAKE_CURRENT_BINARY_DIR}/config.img > ${CMAKE_CURRENT_BINARY_DIR}/config.img.spy
-	#places in data
-	DEPENDS 
-		${CMAKE_CURRENT_BINARY_DIR}/config.img
-)
-
 if(PICOPOCKET_SIM)
 set(BFDARG elf64-x86-64)
 else()
@@ -46,9 +36,9 @@ endif()
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/config_img.o
 	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-	COMMAND ${CMAKE_OBJCOPY} -I binary -O ${BFDARG} --rename-section .data=.flashdata config.img.spy config_img.o
+	COMMAND ${CMAKE_OBJCOPY} -I binary -O ${BFDARG} --rename-section .data=.flashdata config.img config_img.o
 	#places in data
-	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/config.img.spy
+	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/config.img
 )
 
 add_custom_target(config_img_obj DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/config_img.o)
