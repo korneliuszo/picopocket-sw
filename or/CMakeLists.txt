@@ -29,6 +29,7 @@ target_link_libraries(or
 		freedos_kernel
 		config_img
 		mbr_img
+		snappy
 		${OR_HWLIBS}
 	PUBLIC
 		jmpcoro

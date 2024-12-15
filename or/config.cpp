@@ -1,6 +1,8 @@
 #include "or_internal.hpp"
 #include "psram_pio.hpp"
 #include "config.hpp"
+#include <snappy.h>
+#include <snappy-sinksource.h>
 
 static bool config_callback;
 
@@ -22,9 +24,24 @@ extern "C" const uint8_t _binary_bin_KERNEL_SYS_size[];
 extern "C" const uint8_t _binary_bin_KERNEL_SYS_end[];
 extern "C" const uint8_t _binary_bin_KERNEL_SYS_start[];
 
-extern "C" const uint8_t _binary_config_img_size[];
-extern "C" const uint8_t _binary_config_img_end[];
-extern "C" const uint8_t _binary_config_img_start[];
+extern "C" const uint8_t _binary_config_img_spy_size[];
+extern "C" const uint8_t _binary_config_img_spy_end[];
+extern "C" const uint8_t _binary_config_img_spy_start[];
+
+class PsramSink : public snappy::Sink{
+	size_t off;
+	Thread_SHM * thread;
+public:
+	PsramSink(Thread_SHM * _thread) : off(0), thread(_thread){};
+	void Append(const char* data, size_t n) override
+	{
+		auto cpl = PSRAM::PSRAM::write_async_mem(off,reinterpret_cast<const uint8_t*>(data),n);
+		while(!cpl.complete_trigger())
+			thread->yield();
+		off+=n;
+	}
+
+};
 
 static void config_entry (Thread_SHM * thread)
 {
@@ -51,12 +68,14 @@ static void config_entry (Thread_SHM * thread)
 		thread->set_return(params.regs);
 
 		{
-			const uint8_t * data = _binary_config_img_start;
-			const ssize_t n = _binary_config_img_end-_binary_config_img_start;
-
-			auto cpl = PSRAM::PSRAM::write_async_mem(0,data,n);
-			while(!cpl.complete_trigger())
-				thread->yield();
+			snappy::ByteArraySource src = {
+					reinterpret_cast<const char*>
+					(_binary_config_img_spy_start),
+					(size_t)
+					(_binary_config_img_spy_end-_binary_config_img_spy_start)
+			};
+			PsramSink dst = {thread};
+			snappy::Uncompress(&src,&dst);
 		}
 
 		thread->putstr("Config entered\r\n");
