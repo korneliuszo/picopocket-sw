@@ -16,6 +16,7 @@
 #include <isa_worker.hpp>
 #include "or/or.hpp"
 #include <ioiface.hpp>
+#include <config_iface.hpp>
 
 constexpr uint32_t PICO_Freq=250; //PM_SYS_CLK;
 
@@ -47,6 +48,7 @@ int main(void)
 	optionrom_install(&main_thread);
 
 	IoIface::ioiface_install();
+	install_config_iface();
 
 	ISA_Init();
 

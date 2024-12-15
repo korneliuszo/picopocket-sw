@@ -21,7 +21,8 @@ Handler{
 	void (*release_object)(OHandler *);
 };
 
-#define Handler_type_section [[gnu::section("ioiface_handlers"),gnu::used]] const
+extern const Handler config_io_handler;
+extern const Handler optionrom_handler;
 
 Handler_return_t response_byte(uint8_t byte);
 Handler_return_t response_tristate();
@@ -38,7 +39,7 @@ struct Arbitration {
 	uint8_t curr_byte;
 	int bit_in_byte;
 	int byte_in_uid;
-	uint8_t uid[8];
+	static inline uint8_t uid[8];
 	void reset()
 	{
 		rd_bit = false;
@@ -70,10 +71,10 @@ struct Arbitration {
 			if (byte != 0xa5)
 				return RET::LOST;
 		}
-		if(!bit_in_byte)
+		if(!bit_in_byte--)
 		{
 			bit_in_byte=7;
-			if(!byte_in_uid)
+			if(byte_in_uid)
 				byte_in_uid-=1;
 			else
 				return RET::WON;

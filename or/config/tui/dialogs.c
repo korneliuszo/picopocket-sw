@@ -2,6 +2,21 @@
 
 #include "dflat.h"
 
+DIALOGBOX( DeviceConfig )
+DB_TITLE(       "",    -1,-1,-1,-1)
+	CONTROL(TEXT,    "Attributes",       0, 0, 1,25, 101 )
+	CONTROL(LISTBOX,  NULL,              0, 1,22,25, 101 )
+	CONTROL(TEXT,    "Value:",          26, 0, 1,40, 102 )
+	CONTROL(EDITBOX,  NULL,             26, 1, 1,40, 102 )
+    CONTROL(BUTTON,  "Set",             26, 2, 1, 8, 103 )
+    CONTROL(BUTTON,  "Load",          9+26, 2, 1, 8, 104 )
+	CONTROL(TEXT,    "Saved:   [ ]",    26, 4, 1,15, 105 )
+	CONTROL(TEXT,    "Runtime: [ ]",    26, 5, 1,15, 106 )
+	CONTROL(TEXT,    "DIR:     [ ]",    26, 6, 1,15, 107 )
+    CONTROL(BUTTON,  "Flash",           26, 7, 1, 8, 108 )
+    CONTROL(BUTTON,  "Restore",       9+26, 7, 1, 8, 109 )
+ENDDB
+
 /* -------------- the File Open dialog box --------------- */
 DIALOGBOX( FileOpen )
     DB_TITLE(        "Open File",    -1,-1,19,57)

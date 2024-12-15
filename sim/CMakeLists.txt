@@ -13,6 +13,11 @@ add_executable(sim
 	sim.cpp
 )
 	
+target_link_options(sim
+  PUBLIC
+    LINKER:-Map=sim.map
+)
+
 target_link_libraries(sim PRIVATE
 	or
 	ioiface

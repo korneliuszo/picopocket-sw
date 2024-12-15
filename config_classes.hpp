@@ -451,6 +451,12 @@ private:
 	{
 		return max(Ts::TVAL::MAX_STRLEN ...);
 	}
+	template<class ... Ts>
+	static constexpr std::size_t FIELD_COUNT_fn(std::tuple<Ts...> _)
+	{
+		return sizeof ... (Ts);
+	}
+
 	template<class Entry, class ... Ts>
 	static constexpr bool to_flash_fn(Entry _1,Flash_Saved<Ts...> _2)
 	{
@@ -484,6 +490,10 @@ private:
 public:
 	static constexpr std::size_t MAX_MAX_STRLEN =
 			MAX_MAX_STRLEN_fn(typename Basic_Config::Ea{});
+
+	static constexpr std::size_t FIELD_COUNT =
+			FIELD_COUNT_fn(typename Basic_Config::Ea{});
+
 
 	struct ConfigFields {
 		const uint16_t uid;

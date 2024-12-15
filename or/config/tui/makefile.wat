@@ -15,6 +15,6 @@ dflat20/dflat.lib: .symbolic
 	wmake -f makefile.wat dflat.lib
 	cd ..
 
-pocket.exe : picopocket.o dialogs.o menus.o dflat20/dflat.lib
-     wcl picopocket.o dialogs.o menus.o dflat20/dflat.lib -k8192 -fe=pocket.exe
+pocket.exe : picopocket.o dialogs.o menus.o config_iface.o dflat20/dflat.lib
+     wcl picopocket.o dialogs.o menus.o config_iface.o dflat20/dflat.lib -k8192 -fe=pocket.exe
 

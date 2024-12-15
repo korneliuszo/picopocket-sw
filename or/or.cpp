@@ -24,8 +24,6 @@ static uint32_t read_fn(void* obj, uint32_t faddr)
 static void nop_wrfn(void* obj, uint32_t faddr, uint8_t data) {}
 
 
-extern const IoIface::Handler optionrom_handler;
-
 const OROMHandler * const handlers[] =
 {
 		&config_handler,
@@ -182,7 +180,7 @@ struct ORHandler : public IoIface::OHandler {
 			return ret;
 		}
 	}
-	virtual const IoIface::Handler & ec() { return optionrom_handler;};
+	virtual const IoIface::Handler & ec() { return IoIface::optionrom_handler;};
 	void reset()
 	{
 		state = STATE::READ_ENTRY;
@@ -204,8 +202,7 @@ static void release_object(IoIface::OHandler * handle)
 	reinterpret_cast<ORHandler*>(handle)->reset();
 }
 
-Handler_type_section
-IoIface::Handler optionrom_handler = {
+const IoIface::Handler IoIface::optionrom_handler = {
 		0x01,
 		acquire_object,
 		release_object

@@ -1,5 +1,6 @@
 add_subdirectory(8088)
 add_subdirectory(config)
+add_subdirectory(mbr)
 
 add_library(or
 	or.cpp
@@ -27,6 +28,7 @@ target_link_libraries(or
 		ioiface
 		freedos_kernel
 		config_img
+		mbr_img
 		${OR_HWLIBS}
 	PUBLIC
 		jmpcoro

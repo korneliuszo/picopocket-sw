@@ -189,7 +189,7 @@ public:
 	static constexpr char name[] = "MONITOR_AUTOBOOT";
 };
 
-class RAMDISK_INSTALL : public Impl::CElem<MONITOR_AUTOBOOT,UID::RAMDISK_INSTALL,Impl::Bool,true>{
+class RAMDISK_INSTALL : public Impl::CElem<RAMDISK_INSTALL,UID::RAMDISK_INSTALL,Impl::Bool,true>{
 public:
 	static constexpr bool coldboot_required = true;
 	static constexpr char help[] = "ramdisk install";
@@ -202,7 +202,7 @@ public:
 	static constexpr char name[] = "bios Dir";
 };
 
-class RootDir : public Impl::Dir<RootDir,UID::ROOT_DIR,UsbDir,WIFI_DIR,BiosDir,MONITOR_AUTOBOOT>{
+class RootDir : public Impl::Dir<RootDir,UID::ROOT_DIR,UsbDir,WIFI_DIR,BiosDir>{
 public:
 	static constexpr char help[] = "root_dir";
 	static constexpr char name[] = "ROOT_DIR";
@@ -226,10 +226,12 @@ using Flash_Storage = Storage<
 		WIFI_DNS,
 		WIFI_HOSTNAME,
 		BIOS_SEGMENT,
-		MONITOR_AUTOBOOT
+		MONITOR_AUTOBOOT,
+		RAMDISK_INSTALL
 		>;
 
 using Config = Impl::BasicConfig<Flash_Storage,RootDir>;
 using USB_Access = Config;
 using WWW_Access = Config;
+using IO_Access = Config;
 }

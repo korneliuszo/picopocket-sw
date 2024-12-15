@@ -6,9 +6,17 @@
 DEFMENU(MainMenu)
     /* --------------- the File popdown menu ----------------*/
     POPDOWN( "~File",  0, "Read/write/print files. Go to DOS" )
+        SELECTION( "E~xit",          ID_EXIT,     ALT_X, 0 )
+    ENDPOPDOWN
+ENDMENU
+
+/* --------------------- the main menu --------------------- */
+DEFMENU(DeviceMenu)
+    /* --------------- the File popdown menu ----------------*/
+    POPDOWN( "~File",  0, "Read/write/print files. Go to DOS" )
         SELECTION( "~Load to flash",     100,         0, 0 )
         SELECTION( "~Save to flash",     101,         0, 0 )
-        SELECTION( "E~xit",          ID_EXIT,     ALT_X, 0 )
+        SELECTION( "E~xit",          ID_EXIT,     ALT_Y, 0 )
     ENDPOPDOWN
 ENDMENU
 

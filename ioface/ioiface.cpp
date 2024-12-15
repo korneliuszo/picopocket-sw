@@ -2,11 +2,15 @@
 #include "isa_worker.hpp"
 #ifndef PICOPOCKET_SIM
 #include "pico/platform.h"
+#include "pico/unique_id.h"
+#include <cstring>
 #endif
 
-extern "C" IoIface::Handler __start_ioiface_handlers;
-extern "C" IoIface::Handler __stop_ioiface_handlers;
-
+static const IoIface::Handler * const handlers[] =
+{
+		&IoIface::optionrom_handler,
+		&IoIface::config_io_handler
+};
 
 //core1 only variables!!!
 IoIface::OHandler * curr_handler[4];
@@ -64,12 +68,12 @@ static void write_fn(void* obj, uint32_t faddr, uint8_t data)
 		}
 		else
 		{
-			IoIface::Handler *itr=&__start_ioiface_handlers;
-			while(itr < &__stop_ioiface_handlers)
+			const IoIface::Handler *const * itr=handlers;
+			while(itr < &handlers[sizeof(handlers)/sizeof(*handlers)])
 			{
-				if(itr->ec == data)
+				if((*itr)->ec == data)
 				{
-					IoIface::OHandler * nwhndlr = itr->acquire_object(pipe);
+					IoIface::OHandler * nwhndlr = (*itr)->acquire_object(pipe);
 					if(nwhndlr)
 					{
 						nwhndlr->stack_of_unrecognized = 0;
@@ -110,6 +114,20 @@ IoIface::Handler_return_t IoIface::response_tristate()
 
 void IoIface::ioiface_install()
 {
+#ifdef PICOPOCKET_SIM
+	IoIface::Arbitration::uid[0] = 0x01;
+	IoIface::Arbitration::uid[1] = 0x02;
+	IoIface::Arbitration::uid[2] = 0x03;
+	IoIface::Arbitration::uid[3] = 0x04;
+	IoIface::Arbitration::uid[4] = 0x05;
+	IoIface::Arbitration::uid[5] = 0x06;
+	IoIface::Arbitration::uid[6] = 0x07;
+	IoIface::Arbitration::uid[7] = 0x08;
+#else
+	pico_unique_board_id_t board_id;
+	pico_get_unique_board_id(&board_id);
+	memcpy(IoIface::Arbitration::uid,board_id.id,8);
+#endif
 	add_device({
 					.start = 0xF8,
 					.size = (uint32_t)8,

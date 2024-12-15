@@ -9,10 +9,21 @@ static constexpr size_t SECTORS = 32;
 static constexpr size_t HEADS = 2;
 static constexpr size_t CYLINDERS = 256;
 
+extern "C" const uint8_t _binary_mbr_bin_size[];
+extern "C" const uint8_t _binary_mbr_bin_end[];
+extern "C" const uint8_t _binary_mbr_bin_start[];
+
+
 void ramdisk_install(Thread * main)
 {
 	AR1021::AR1021::init();
 	PSRAM::PSRAM::init();
+	const uint8_t * data = _binary_mbr_bin_start;
+	const ssize_t n = _binary_mbr_bin_end-_binary_mbr_bin_start;
+
+	auto cpl = PSRAM::PSRAM::write_async_mem(0,data,n);
+	while(!cpl.complete_trigger())
+		main->yield();
 }
 
 static volatile uint32_t int13chain = 0;
