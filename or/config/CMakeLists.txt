@@ -8,9 +8,9 @@ add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/config.img
 	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 	COMMAND 
-	    dd if=/dev/zero of=config.img bs=1k count=512
+	    dd if=/dev/zero of=config.img bs=1k count=1k
 	COMMAND
-		mformat -i config.img -t 16 -h 2 -s 32 -L12 ::
+		mformat -i config.img -t 32 -h 2 -s 32 -L12 ::
 	COMMAND
 		mcopy -i config.img ${freedos_command_zip_SOURCE_DIR}/BIN/COMMAND.COM ::
 	COMMAND
