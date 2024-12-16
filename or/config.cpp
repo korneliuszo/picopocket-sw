@@ -2,7 +2,7 @@
 #include "psram_pio.hpp"
 #include "config.hpp"
 
-static bool config_callback;
+static volatile bool config_callback;
 
 void config_install(Thread * main)
 {

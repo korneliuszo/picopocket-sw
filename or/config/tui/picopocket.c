@@ -25,6 +25,7 @@ void PrintDeviceLastID(char name_buff[8*2+1])
 
 typedef struct {
 	uint16_t uid;
+	unsigned rec;
 } Options;
 
 typedef struct __packed__ {
@@ -36,10 +37,11 @@ typedef struct __packed__ {
 Options * options;
 uint16_t options_len;
 
-static unsigned RecurseTree(unsigned len, uint16_t uid)
+static unsigned RecurseTree(unsigned rec,unsigned len, uint16_t uid)
 {
 	Type * type;
 	options[len].uid = uid;
+	options[len].rec = rec;
 	len +=1;
 
 	SendCmd(4);
@@ -61,7 +63,7 @@ static unsigned RecurseTree(unsigned len, uint16_t uid)
 		ulen = ulen / sizeof(uint16_t);
 		for(i=0;i<ulen;i++)
 		{
-			len=RecurseTree(len,uids[i]);
+			len=RecurseTree(rec+1,len,uids[i]);
 		}
 		free(uids);
 	}
@@ -79,7 +81,7 @@ static void FillOptions()
 	options = (Options*)calloc(options_len,sizeof(Options));
 	assert(options);
 
-	recurse_len = RecurseTree(0,0);
+	recurse_len = RecurseTree(0,0,0);
 	assert(recurse_len==options_len);
 }
 
@@ -176,10 +178,16 @@ static int DeviceProc(WINDOW wnd,MESSAGE msg,PARAM p1,PARAM p2)
 		    for(i=0;i<options_len;i++)
 		    {
 		    	char * attrname;
+		    	char buff[100];
+		    	unsigned j;
 				SendCmd(3);
 				SendCommandUID(options[i].uid);
 				attrname = RecvString();
-				PutItemText(wnd, 101, attrname);
+				buff[0] = 0;
+				for(j=0;j<options[i].rec;j++)
+					strcat(buff,"-");
+				strcat(buff,attrname);
+				PutItemText(wnd, 101, buff);
 				free(attrname);
 		    }
 

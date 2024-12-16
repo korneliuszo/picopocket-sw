@@ -18,12 +18,18 @@ add_custom_command(
 	COMMAND
 		mcopy -i config.img ${CMAKE_CURRENT_SOURCE_DIR}/fdconfig.sys ::
 	COMMAND
+		mcopy -i config.img ${CMAKE_CURRENT_SOURCE_DIR}/webap.bat ::
+	COMMAND
+		mcopy -i config.img ${CMAKE_CURRENT_SOURCE_DIR}/websta.bat ::
+	COMMAND
 		mcopy -i config.img ${microweb_boot_disk_BINARY_DIR}/MICROWEB ::
 	#places in data
 	DEPENDS 
 		${freedos_command_zip_SOURCE_DIR}/BIN/COMMAND.COM
-		${CMAKE_CURRENT_SOURCE_DIR}/pocket.exe
+		${CMAKE_CURRENT_SOURCE_DIR}/tui/pocket.exe
 		${CMAKE_CURRENT_SOURCE_DIR}/fdconfig.sys
+		${CMAKE_CURRENT_SOURCE_DIR}/webap.bat
+		${CMAKE_CURRENT_SOURCE_DIR}/websta.bat
 		${microweb_boot_disk_BINARY_DIR}/MICROWEB
 )
 

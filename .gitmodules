@@ -10,3 +10,6 @@
 [submodule "or/config/tui/dflat20"]
 	path = or/config/tui/dflat20
 	url = https://github.com/korneliuszo/dflat20.git
+[submodule "pico-examples"]
+	path = pico-examples
+	url = https://github.com/raspberrypi/pico-examples

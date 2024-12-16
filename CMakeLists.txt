@@ -20,6 +20,8 @@ add_executable(picopocket-sw
 	usb_config.cpp
 	network_l2.cpp
 	www.cpp
+	${CMAKE_CURRENT_LIST_DIR}/pico-examples/pico_w/wifi/access_point/dhcpserver/dhcpserver.c
+    ${CMAKE_CURRENT_LIST_DIR}/pico-examples/pico_w/wifi/access_point/dnsserver/dnsserver.c
 )
 
 target_compile_definitions(picopocket-sw PRIVATE
@@ -55,7 +57,12 @@ target_link_libraries(picopocket-sw PRIVATE
 	jmpcoro
 )
 
-target_include_directories(picopocket-sw PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(picopocket-sw 
+	PRIVATE 
+		${CMAKE_CURRENT_LIST_DIR}
+		${CMAKE_CURRENT_LIST_DIR}/pico-examples/pico_w/wifi/access_point/dhcpserver
+		${CMAKE_CURRENT_LIST_DIR}/pico-examples/pico_w/wifi/access_point/dnsserver
+	)
 
 
 target_link_options(picopocket-sw PRIVATE
