@@ -139,6 +139,7 @@ struct ORHandler : public IoIface::OHandler {
 					{
 						if((*itr_hndlr)->decide(entry_state))
 						{
+							thread_data.cmd.command = 0;
 							thread_entry = reinterpret_cast<Thread_SHM::ENTRY>((*itr_hndlr)->entry);
 							thread_stopping = true;
 							itr_hndlr++;
@@ -146,6 +147,7 @@ struct ORHandler : public IoIface::OHandler {
 						}
 						itr_hndlr++;
 					}
+					thread_data.cmd.command = 0;
 					return cmd;
 				}
 				state =STATE::SEND_DATA;
