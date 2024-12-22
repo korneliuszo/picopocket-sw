@@ -13,6 +13,7 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/ne2000xt)
 
 add_subdirectory(ioface)
 add_subdirectory(or)
+add_subdirectory(16550)
 
 add_executable(picopocket-sw
 	main.cpp
@@ -54,6 +55,7 @@ target_link_libraries(picopocket-sw PRIVATE
 	picow_http
 	or
 	ioiface
+	uart_16550
 	jmpcoro
 )
 

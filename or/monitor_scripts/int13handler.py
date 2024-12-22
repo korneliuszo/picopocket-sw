@@ -73,6 +73,7 @@ class int13h(object):
     def update_dap(self,params,dap):
         data = struct.pack("<BBHHHI",*(dap.values()))
         self.m.putmem(params["ds"],params["si"],data)
+        return True
     def ext_read(self,params):
         dap=self.read_dap(params)
         data = self.read(dap["lbal"],dap["sectors"])

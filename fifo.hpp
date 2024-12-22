@@ -1,5 +1,7 @@
 #pragma once
 #include <stddef.h>
+#include <type_traits>
+#include <string.h>
 
 template <typename T, int SIZE>
 class Fifo
@@ -28,32 +30,36 @@ protected:
 			, start2(it.mr.data_start)
 			, stop2(it.ptr)
 			{};
-			void set_len(ssize_t len)
+			void set_len(size_t len)
 			{
-				len -= stop-start;
-				if (len < 0)
+				std::make_signed<size_t>::type slen = len - (stop-start);
+				if (slen < 0)
 				{
 					stop2=start2;
-					stop = stop + len;
+					stop = stop + slen;
 				}
 				else {
-					stop2 = start2 + len;
+					stop2 = start2 + slen;
 				}
+			}
+			size_t get_len()
+			{
+				return stop-start+stop2-start2;
 			}
 			Tp operator [](size_t idx) volatile
 			{
-				ssize_t idx2 = idx-(stop-start);
+				std::make_signed<size_t>::type idx2 = idx-(stop-start);
 				if(idx2<0)
 					return &start[idx];
 				else
 					return &start2[idx2];
 			}
-			void put_bytes(const T* buff, ssize_t len,size_t at)
+			void put_bytes(const T* buff, size_t len,size_t at)
 			{
-				ssize_t at2 = at-(stop-start);
+				std::make_signed<size_t>::type at2 = at-(stop-start);
 				if(at2 < 0)
 				{
-					ssize_t len1 = len-(stop-(start+at));
+					std::make_signed<size_t>::type len1 = len-(stop-(start+at));
 					if(len1<=0)
 					{
 						memcpy(const_cast<T*>(&start[at]),buff,len);
@@ -139,26 +145,26 @@ public:
 		rdptr.advance(len);
 	}
 
-	inline bool is_fifo_full()
+	inline bool is_fifo_full() volatile
 	{
 		Iterator tmrd = wrptr;
 		tmrd.advance();
 		return tmrd.ptr == rdptr.ptr;
 	}
 
-	inline bool is_fifo_empty()
+	inline bool is_fifo_empty() volatile
 	{
 		return rdptr.ptr == wrptr.ptr;
 	}
 
-	inline long fifo_check()
+	inline size_t fifo_check() volatile
 	{
-		int ret = (wrptr.ptr - rdptr.ptr);
+		std::make_signed<size_t>::type ret = (wrptr.ptr - rdptr.ptr);
 		if (ret < 0) ret +=SIZE;
 		return ret;
 	}
 
-	inline long fifo_free()
+	inline size_t fifo_free() volatile
 	{
 		return SIZE-1-fifo_check();
 	}

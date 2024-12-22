@@ -140,14 +140,16 @@ struct ORHandler : public IoIface::OHandler {
 						if((*itr_hndlr)->decide(entry_state))
 						{
 							thread_data.cmd.command = 0;
+							thread_stopping = thread_state;
 							thread_entry = reinterpret_cast<Thread_SHM::ENTRY>((*itr_hndlr)->entry);
-							thread_stopping = true;
 							itr_hndlr++;
 							return 0x00; //override
 						}
 						itr_hndlr++;
 					}
+					thread_stopping = thread_state;
 					thread_data.cmd.command = 0;
+					state = STATE::NO_OP;
 					return cmd;
 				}
 				state =STATE::SEND_DATA;
@@ -188,7 +190,7 @@ struct ORHandler : public IoIface::OHandler {
 	void reset()
 	{
 		state = STATE::READ_ENTRY;
-		thread_stopping = true;
+		thread_stopping = thread_state;
 	}
 };
 
@@ -235,18 +237,25 @@ void optionrom_start_worker(Thread * main)
 	monitor_poll();
 	for(size_t i=0;i<1;i++)
 	{
-		if(handles[i].thread_stopping && handles[i].thread_state)
+		if(handles[i].thread_state)
 		{
-			handles[i].thread_state = false;
-			handles[i].thread_data.disconnect(); //we aren't even in disconnected task
+			if(handles[i].thread_stopping)
+			{
+				handles[i].thread_state = false;
+				handles[i].thread_data.disconnect(); //we aren't even in disconnected task
+				handles[i].thread_stopping = false;
+			}
 		}
-		handles[i].thread_stopping = false;
-
-		if(handles[i].thread_entry && !handles[i].thread_state)
+		else
 		{
-			handles[i].thread_state = true;
-			handles[i].thread_data.run(main,handles[i].thread_entry);
-			handles[i].thread_entry = nullptr;
+			if(handles[i].thread_entry)
+			{
+				auto tmp = handles[i].thread_entry;
+				handles[i].thread_entry = nullptr;
+				handles[i].thread_state = true;
+				handles[i].thread_stopping = false;
+				handles[i].thread_data.run(main,tmp);
+			}
 		}
 	}
 }

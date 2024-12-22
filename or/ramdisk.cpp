@@ -274,9 +274,7 @@ static void ramdisk_entry (Thread_SHM * thread)
 	if(int13chain)
 		thread->chain(int13chain);
 
-
 	ramdisk_handle(thread,int13disk_no);
-
 
 	thread->callback_end();
 }

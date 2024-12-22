@@ -7,6 +7,7 @@
 #include <sys/select.h>
 #include <sys/fcntl.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <unistd.h>
 #else
 #include "pico/cyw43_arch.h"
@@ -60,12 +61,13 @@ try_send(struct tcp_pcb *tpcb)
 static struct pbuf * volatile recv_pbuff;
 static size_t off = 0;
 
+static
 void try_recv(struct tcp_pcb *tpcb)
 {
 	while(recv_pbuff && crstate.recvbuff.fifo_free())
 	{
 		auto buff = crstate.recvbuff.get_wrbuff();
-		size_t len = std::min(crstate.recvbuff.fifo_free(),(long)(recv_pbuff->len-off));
+		size_t len = std::min(crstate.recvbuff.fifo_free(),(recv_pbuff->len-off));
 		buff.put_bytes(&static_cast<uint8_t*>(recv_pbuff->payload)[off],len,0);
 		crstate.recvbuff.commit_wrbuff(len);
 		off+=len;
@@ -299,6 +301,12 @@ static void monitor_entry (Thread_SHM * thread)
 				req[2].next = nullptr;
 
 			{
+				if (cmd == 0x03)
+				{
+					crstate.recvbuff.commit_rdbuff(slen);
+					crstate.sendbuff.commit_wrbuff(rlen);
+					thread->callback_end();
+				}
 				thread->cmd.send = req[0].len ? &req[0] : nullptr;
 				thread->cmd.recv = req[2].len ? &req[2] : nullptr;
 				thread->cmd.command = cmd;
@@ -336,7 +344,12 @@ void monitor_poll()
 		crstate.sendbuff.clear_from_rd();
 		PCB connfd = accept4(lsock, nullptr, nullptr, SOCK_NONBLOCK);
 		if(connfd > 0)
+		{
 			csock = connfd;
+			int nodelay = 1;
+			if(setsockopt(csock,IPPROTO_TCP,TCP_NODELAY,&nodelay,sizeof(nodelay))!=0)
+				exit(1);
+		}
 	}
 	if(csock)
 	{

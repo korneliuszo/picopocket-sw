@@ -3,6 +3,9 @@
 #include "or/or.hpp"
 #include <ioiface.hpp>
 #include <config_iface.hpp>
+#include "16550/uart_tcp_server.hpp"
+
+LWIP_TCP_16550 uart1;
 
 int main(void)
 {
@@ -14,6 +17,7 @@ int main(void)
 
 	IoIface::ioiface_install();
 	install_config_iface();
+	uart1.connect(0x3F8,4,5556);
 
 	ISA_Init();
 
@@ -23,5 +27,6 @@ int main(void)
     {
 		main_thread.yield();
 		optionrom_start_worker(&main_thread);
+		uart1.poll();
     }
 }

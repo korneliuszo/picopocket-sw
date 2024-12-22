@@ -1,3 +1,6 @@
+#define _HARDWARE_UART_H
+#define _PICO_STDIO_UART_H
+
 #include <string.h>
 #include <stdint.h>
 #include "pico/stdlib.h"
@@ -17,6 +20,7 @@
 #include "or/or.hpp"
 #include <ioiface.hpp>
 #include <config_iface.hpp>
+#include "16550/uart_tcp_server.hpp"
 
 constexpr uint32_t PICO_Freq=250; //PM_SYS_CLK;
 
@@ -28,6 +32,7 @@ static void copy_optionroms(void) {
 	memcpy(__core1_static_start__, __core1_static_source__, (__core1_static_end__-__core1_static_start__));
 }
 
+LWIP_TCP_16550 uart1;
 
 int main(void)
 {
@@ -49,6 +54,7 @@ int main(void)
 
 	IoIface::ioiface_install();
 	install_config_iface();
+	uart1.connect(0x3F8,4,5556);
 
 	ISA_Init();
 
@@ -65,6 +71,7 @@ int main(void)
 		network_poll();
 		optionrom_start_worker(&main_thread);
 		main_thread.yield();
+		uart1.poll();
 	}
 
 	return 0;

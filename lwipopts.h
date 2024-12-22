@@ -5,7 +5,7 @@
 #define NO_SYS                      1
 
 #ifndef MAX_CONCURRENT_CX_HINT
-#define MAX_CONCURRENT_CX_HINT      3
+#define MAX_CONCURRENT_CX_HINT      5
 #endif
 
 #define NUM_SERVER_HINT             1
@@ -28,8 +28,8 @@
 #define TCP_SND_QUEUELEN            ((4 * (TCP_SND_BUF) + (TCP_MSS - 1)) / (TCP_MSS))
 #define MEMP_NUM_TCP_SEG            TCP_SND_QUEUELEN
 
-#define MEMP_NUM_TCP_PCB            (MAX_CONCURRENT_CX_HINT+1)
-#define MEMP_NUM_TCP_PCB_LISTEN     (NUM_SERVER_HINT+1)
+#define MEMP_NUM_TCP_PCB            (MAX_CONCURRENT_CX_HINT+3)
+#define MEMP_NUM_TCP_PCB_LISTEN     (NUM_SERVER_HINT+3)
 
 #define LWIP_NETIF_STATUS_CALLBACK  1
 #define LWIP_NETIF_LINK_CALLBACK    1
@@ -47,7 +47,7 @@
 #define LWIP_UDP                    1
 #define LWIP_DNS                    1
 #define LWIP_TCP_KEEPALIVE          1
-#define LWIP_NETIF_TX_SINGLE_PBUF   1
+#define LWIP_NETIF_TX_SINGLE_PBUF   0
 #define DHCP_DOES_ARP_CHECK         0
 #define LWIP_DHCP_DOES_ACD_CHECK    0
 

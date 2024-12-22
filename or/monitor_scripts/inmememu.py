@@ -47,10 +47,6 @@ if __name__ == "__main__":
     m.return_boot()
 
     while True:
-        m.chain(chain)
-        fdd.process()
-        m.return_boot()
-
         try:
             m.wait_for_isr()
         except KeyboardInterrupt:
@@ -58,3 +54,12 @@ if __name__ == "__main__":
             print("Nextimage")
             continue
     
+        params = m.get_called_params()
+        if params["irq"] != 0x13:
+            m.return_boot()
+            continue
+        if chain:
+            m.chain(chain)
+        fdd.process()
+        m.return_boot()
+
