@@ -5,10 +5,10 @@
 #define NO_SYS                      1
 
 #ifndef MAX_CONCURRENT_CX_HINT
-#define MAX_CONCURRENT_CX_HINT      5
+#define MAX_CONCURRENT_CX_HINT      10
 #endif
 
-#define NUM_SERVER_HINT             1
+#define NUM_SERVER_HINT             3
 
 #define LWIP_SOCKET                 0
 
@@ -47,7 +47,7 @@
 #define LWIP_UDP                    1
 #define LWIP_DNS                    1
 #define LWIP_TCP_KEEPALIVE          1
-#define LWIP_NETIF_TX_SINGLE_PBUF   0
+#define LWIP_NETIF_TX_SINGLE_PBUF   1
 #define DHCP_DOES_ARP_CHECK         0
 #define LWIP_DHCP_DOES_ACD_CHECK    0
 
