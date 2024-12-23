@@ -139,7 +139,7 @@ private:
 	{
 		IRQ_Set(irqh,imr_reg&isr_reg&0x7f);
 	}
-	size_t dma_op_cnt;
+	ssize_t dma_op_cnt;
 	void DMA_Complete(){
 		dma_op_cnt = -1;
 	};
@@ -181,18 +181,22 @@ private:
 		{
 			if(((cr_reg>>3)&0x7) == 0x1)
 			{
-				if(!--dma_op_cnt)
+				uint16_t i = crda_reg.w - (addr&0x01);
+				uint16_t step = 0;
+				if(!(addr&0x01))
+					step = dcr_reg & 0x01 ? 2 : 1;
+				crda_reg.w+=step;
+				if((dma_op_cnt-=step)<=0 && (!(dcr_reg & 0x01) || (addr&0x01)))
 				{
 					uint32_t save = spin_lock_blocking(spinlock);
 					isr_reg |= 0x40; //RDC
 					spin_unlock(spinlock,save);
 					Recalculate_IRQ();
 				}
-				if(crda_reg.w >= local_ram.buff_start && crda_reg.w < local_ram.buff_end)
-					return local_ram.buff[crda_reg.w++ - local_ram.buff_start];
-				else if (crda_reg.w<32)
-					return mac[crda_reg.w++];
-				crda_reg.w++;
+				if(i >= local_ram.buff_start && i < local_ram.buff_end)
+					return local_ram.buff[i - local_ram.buff_start];
+				else if (i<32)
+					return mac[i];
 				return 0xff;
 			}
 		}
@@ -230,14 +234,17 @@ private:
 		{
 			if(((cr_reg>>3)&0x7) == 0x2)
 			{
+				uint16_t i = crda_reg.w - (addr&0x01);
+				uint16_t step = 0;
+				if(!(addr&0x01))
+					step = (dcr_reg & 0x01) ? 2 : 1;
+				crda_reg.w+=step;
 				if (
-					crda_reg.w >= local_ram.buff_start &&
-					crda_reg.w < local_ram.buff_end)
-						local_ram.buff[crda_reg.w++ - local_ram.buff_start] = data;
-				else
-					crda_reg.w++;
+					i >= local_ram.buff_start &&
+					i < local_ram.buff_end)
+						local_ram.buff[i - local_ram.buff_start] = data;
 
-				if(!--dma_op_cnt)
+				if((dma_op_cnt-=step)<=0 && (!(dcr_reg & 0x01) || (addr&0x01)))
 				{
 					uint32_t save = spin_lock_blocking(spinlock);
 					isr_reg |= 0x40; //RDC
