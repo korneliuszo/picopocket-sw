@@ -7,6 +7,7 @@ import copy
 class monitor():
     def __init__(self,ip):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.s.connect((ip,5555))
         
     def msg(self,cmd,sdata,rlen):

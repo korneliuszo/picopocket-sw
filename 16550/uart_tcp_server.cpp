@@ -33,7 +33,7 @@ void LWIP_TCP_16550::try_send(struct tcp_pcb *tpcb)
 			arg->send_commit(len);
 		}
 	}
-	if(wr_err == ERR_OK)
+	if(wr_err == ERR_OK || wr_err == ERR_MEM)
 		wr_err = tcp_output(tpcb);
 }
 

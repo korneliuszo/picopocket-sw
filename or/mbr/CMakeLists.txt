@@ -7,16 +7,10 @@ endif()
 
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/mbr.o
-	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-	COMMAND
-		dd if=/dev/zero of=disk.img bs=8M count=1
-	COMMAND
-		fdisk -C 256 -H 2 -S 256 disk.img < ${CMAKE_CURRENT_SOURCE_DIR}/fdisk.script
-	COMMAND
-		dd if=disk.img of=mbr.bin bs=512 count=1		
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}	
 	COMMAND 
-		${CMAKE_OBJCOPY} -I binary -O ${BFDARG} --rename-section .data=.flashdata mbr.bin mbr.o
-	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/fdisk.script
+		${CMAKE_OBJCOPY} -I binary -O ${BFDARG} --rename-section .data=.flashdata mbr.bin ${CMAKE_CURRENT_BINARY_DIR}/mbr.o
+	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mbr.bin
 )
 
 add_custom_target(mbr_obj DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/mbr.o)

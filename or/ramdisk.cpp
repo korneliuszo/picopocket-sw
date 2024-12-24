@@ -122,7 +122,11 @@ bool ramdisk_handle(Thread_SHM * thread, uint8_t drive_no)
 		params.regs.regs.bx = 0;
 		uint8_t c = CYLINDERS-1;
 		params.regs.regs.cx = ((c&0xff) <<8) | ((c&0x300)>>(8-6)) | SECTORS;
-		params.regs.regs.dx = (HEADS-1 << 8) | 0x01;
+
+		uint8_t disks;
+		thread->getmem(0,0x475,&disks,1);
+
+		params.regs.regs.dx = (HEADS-1 << 8) | disks;
 		if(!(drive_no &0x80))
 		{
 			params.regs.regs.di = 0;

@@ -42,7 +42,10 @@ class int13h(object):
         c -= 1
         params["bx"] = 0
         params["cx"] = ((c&0xff) <<8) | ((c&0x300)>>(8-6)) | s
-        params["dx"] = (h << 8) | 0x01
+        
+        disks = self.m.getmem(0,0x475,1)[0]
+        
+        params["dx"] = (h << 8) | disks
         if not (self.idx & 0x80): # hard disks DON'T touch that 
             params["di"] = 0 # I hope DBT is not needed for now
             params["es"] = 0
