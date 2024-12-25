@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(picopocket-sim)
 
 set(PICOPOCKET_SIM TRUE)
+set(WORKER isa_worker)
 add_compile_definitions(PICOPOCKET_SIM)
 
 add_subdirectory(../picopocket-hw picopocket-hw)

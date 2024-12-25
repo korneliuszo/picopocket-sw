@@ -2,6 +2,15 @@ cmake_minimum_required(VERSION 3.16)
 
 include(${CMAKE_CURRENT_LIST_DIR}/picopocket-hw/pico-sdk/pico_sdk_init.cmake)
 
+option(TARGET_GUS "Build for picogus" OFF)
+if(${TARGET_GUS})
+	set(WORKER isa_worker_gus)
+	set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/picogus/boards)
+	set(PICO_BOARD picogus)
+else()
+	set(WORKER isa_worker)
+endif()
+
 add_subdirectory(picopocket-hw)
 
 set(CMAKE_BUILD_TYPE "RelWithDebInfo")
@@ -10,6 +19,10 @@ project(picopocket-sw)
 
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/picow-http)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/ne2000xt)
+
+if(${TARGET_GUS})
+	add_subdirectory(picogus)
+endif()
 
 add_subdirectory(ioface)
 add_subdirectory(or)
@@ -45,7 +58,7 @@ pico_set_linker_script(picopocket-sw ${CMAKE_CURRENT_LIST_DIR}/default_scratchy_
 pico_add_extra_outputs(picopocket-sw)
 
 target_link_libraries(picopocket-sw PRIVATE
-	isa_worker
+	${WORKER}
 	hardware_flash
 	hardware_sync
 	tinyusb_device

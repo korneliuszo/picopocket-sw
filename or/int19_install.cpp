@@ -28,7 +28,7 @@ static void int19_entry (Thread_SHM * thread)
 	}
 	else if(int19chain && entry.entry == 1 && entry.irq_no == 0x19)
 	{
-		if(entry.regs.regs.rettype != 0xFF)
+		if(entry.regs.regs.rettype & 0x80)
 			thread->callback_end();
 		thread->chain(int19chain);
 		static const char str[] = "PicoPocket int19 chained\r\n";

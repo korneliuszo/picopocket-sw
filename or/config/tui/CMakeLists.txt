@@ -11,8 +11,9 @@ add_custom_command(
 		"WATCOM=${WATCOM_PATH}"
 	wmake -f makefile.wat pocket.exe
 	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-	OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/pocket.exe
+	OUTPUT ${CMAKE_CURRENT_LIST_DIR}/pocket.exe
 	DEPENDS 
+		${CMAKE_CURRENT_LIST_DIR}/config_iface.c
 		${CMAKE_CURRENT_LIST_DIR}/picopocket.c
 		${CMAKE_CURRENT_LIST_DIR}/menus.c
 		${CMAKE_CURRENT_LIST_DIR}/dialogs.c

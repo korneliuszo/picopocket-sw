@@ -2,3 +2,4 @@
 build/
 *.pyc
 build_sim
+build_gus

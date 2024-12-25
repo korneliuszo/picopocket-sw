@@ -14,7 +14,7 @@ endif()
 
 target_link_libraries(ioiface
 	PRIVATE
-		isa_worker
+		${WORKER}
 		${OR_HWLIBS}
 )	
 target_include_directories(ioiface PUBLIC ${CMAKE_CURRENT_LIST_DIR})

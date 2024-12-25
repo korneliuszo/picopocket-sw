@@ -96,20 +96,102 @@ extern const uint8_t  __based( __segname( "_CODE" ) ) irqentry;
 extern const unsigned  __based( __segname( "_CODE" ) ) port_nog;
 #pragma aux port_nog "port_no";
 
-int __cdecl start(uint16_t irq, IRQ_DATA far * params);
-int start(uint16_t irq, IRQ_DATA far * params)
+int select_next(
+		uint8_t far LastID[8],
+		int far *lastConflictZero,
+		int far *lastDevice,
+		uint16_t irq,
+		unsigned codeplace,
+		IRQ_DATA far * params,
+		uint8_t rettype
+		)
 {
 	unsigned port_no = port_nog;
-	uint8_t sync_counter = 0;
-	uint8_t rettype = irq == 0x00 ? 0x02 : 0xFF;
-	unsigned codeplace = (params->ph2 - (unsigned)&irqentry)/3-1; // call near takes 3 bytes
+	int i;
+	int BitNumber = 0;
+	int ConflictBitNumber = *lastConflictZero;
+	if(*lastDevice)
+		return 0;
+	*lastConflictZero = -1;
+
 	outp(port_no+1,0x01);
 	outp(port_no,irq);
 	outp(port_no,codeplace);
 	for(uint8_t far * i=(uint8_t far *)params, far *e = i+sizeof(*params);i<e;i++)
 		outp(port_no,*i);
 	outp(port_no,rettype);
-	outp(port_no,0xed); //TODO: full isolation
+
+	for(i=7;i>=0;i--)
+	{
+		uint8_t bit;
+		for(bit=0x80;bit;bit>>=1)
+		{
+			int is_zero;
+			int is_one;
+			is_zero= inp(port_no) == 0xa5;
+			is_one = inp(port_no) == 0x5a;
+
+			if(!is_zero && !is_one)
+				return 0;
+
+			if(is_zero && is_one)
+			{
+				if(ConflictBitNumber != BitNumber)
+				{
+					if(BitNumber<ConflictBitNumber)
+					{
+						is_one = LastID[i]&bit;
+					}
+					else
+					{
+						is_one = 0;
+					}
+				}
+				else
+				{
+					is_one = 1;
+				}
+				if(!is_one)
+					*lastConflictZero = BitNumber;
+			}
+			if(is_one)
+			{
+				LastID[i]|=bit;
+				outp(port_no,0x5a);
+			}
+			else
+			{
+				LastID[i]&=~bit;
+				outp(port_no,0xa5);
+			}
+			BitNumber++;
+		}
+	}
+	if(*lastConflictZero == -1)
+		*lastDevice = 1;
+	return 1;
+}
+
+int __cdecl start(uint16_t irq, IRQ_DATA far * params);
+int start(uint16_t irq, IRQ_DATA far * params)
+{
+	uint8_t LastID[8];
+	int lastConflictZero = -1;
+	int lastDevice = 0;
+	unsigned port_no = port_nog;
+	uint8_t sync_counter = 0;
+	uint8_t rettype = irq == 0x00 ? 0x02 : 0x7F;
+	unsigned codeplace = (params->ph2 - (unsigned)&irqentry)/3-1; // call near takes 3 bytes
+	if(!select_next(LastID,&lastConflictZero,&lastDevice,
+			irq,
+			codeplace,
+			params,
+			rettype))
+	{
+		outp(0x80,0xED); //DEBUG
+		while(1);
+	}
+	next_board:
 	outp(0x80,0x00); //DEBUG
 	while(1)
 	{
@@ -123,9 +205,15 @@ int start(uint16_t irq, IRQ_DATA far * params)
 		{
 		case 0x03:
 			outp(port_no+1,0x00); //TODO: full isolation
-			if(rettype == 0xff)
+			if(select_next(LastID,&lastConflictZero,&lastDevice,
+					irq,
+					codeplace,
+					params,
+					rettype))
+				goto next_board;
+			if(rettype == 0x7f)
 				while(1); //break
-			return retcode_map[rettype];
+			return retcode_map[rettype&0x03];
 		default:
 			while(1); //break
 			break;

@@ -17,7 +17,7 @@ int lastDevice;
 void ResetSelect()
 {
 	memset(LastID,0x00,sizeof(LastID));
-	lastConflictZero = 0;
+	lastConflictZero = -1;
 	lastDevice = 0;
 }
 
@@ -45,7 +45,7 @@ int SelectNext()
 	int ConflictBitNumber = lastConflictZero;
 	if(lastDevice)
 		return 0;
-	lastConflictZero = 0;
+	lastConflictZero = -1;
 	outp(port_no+1,0x02);
 	for(i=7;i>=0;i--)
 	{
@@ -72,13 +72,13 @@ int SelectNext()
 					{
 						is_one = 0;
 					}
-					if(!is_one)
-						lastConflictZero = BitNumber;
 				}
 				else
 				{
 					is_one = 1;
 				}
+				if(!is_one)
+					lastConflictZero = BitNumber;
 			}
 			if(is_one)
 			{
@@ -93,7 +93,7 @@ int SelectNext()
 			BitNumber++;
 		}
 	}
-	if(lastConflictZero == 0)
+	if(lastConflictZero == -1)
 		lastDevice = 1;
 	return 1;
 }

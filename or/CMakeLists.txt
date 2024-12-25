@@ -23,7 +23,7 @@ else()
 endif()
 target_link_libraries(or 
 	PRIVATE
-		isa_worker
+		${WORKER}
 		optionrom
 		ioiface
 		freedos_kernel

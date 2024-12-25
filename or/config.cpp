@@ -31,7 +31,7 @@ static void config_entry (Thread_SHM * thread)
 	auto entry = thread->get_entry();
 	if(entry.irq_no == 0x19)
 	{
-		if(entry.regs.regs.rettype != 0xff)
+		if(entry.regs.regs.rettype&0x80)
 			thread->callback_end();
 		thread->putstr("PicoPocket config: press C to ");
 		thread->putstr("enter\r\n");
@@ -41,6 +41,10 @@ static void config_entry (Thread_SHM * thread)
 
 		thread->install_irq(0x13);
 
+		uint8_t disks;
+		disks=0;
+		thread->putmem(0,0x475,&disks,1);
+
 		thread->putmem(0x60,0,const_cast<uint8_t*>(_binary_bin_KERNEL_SYS_start),
 				_binary_bin_KERNEL_SYS_end - _binary_bin_KERNEL_SYS_start);
 
@@ -48,13 +52,14 @@ static void config_entry (Thread_SHM * thread)
 
 		auto params = thread->get_entry();
 		params.regs.regs.bx = 0x0000;
+		params.regs.regs.rettype = 0x80;
 		thread->set_return(params.regs);
 
 		{
 			const uint8_t * data = _binary_config_img_start;
 			const ssize_t n = _binary_config_img_end-_binary_config_img_start;
 
-			auto cpl = PSRAM::PSRAM::write_async_mem(0,data,n);
+			auto cpl = PSRAM::PSRAM::Write_Mem_Task(0,data,n);
 			while(!cpl.complete_trigger())
 				thread->yield();
 		}

@@ -14,7 +14,7 @@ endif()
 
 target_link_libraries(uart_16550 
 	PRIVATE
-		isa_worker
+		${WORKER}
 		${OR_HWLIBS}
 )
 

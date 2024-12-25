@@ -252,7 +252,7 @@ static void ramdisk_entry (Thread_SHM * thread)
 	auto entry = thread->get_entry();
 	if(entry.irq_no == 0x19)
 	{
-		if(entry.regs.regs.rettype != 0xff)
+		if(entry.regs.regs.rettype&0x80)
 			thread->callback_end();
 		bool autoboot = Config::RAMDISK_INSTALL::val.ival;
 		thread->putstr("PicoPocket ramdisk: press R to ");

@@ -1,0 +1,195 @@
+/*
+ * SPDX-FileCopyrightText: Korneliusz Osmenda <korneliuszo@gmail.com>
+ *
+ * SPDX-License-Identifier: MIT
+ */
+ 
+.define public PIN_IOW             4
+.define public PIN_IOR             5
+
+.define public PIN_DACK           19
+.define public PIN_AD0             6
+.define public PIN_DRQ            22
+.define public PIN_SIDE           26
+.define public SIDE_AA0_MASK    0x02
+.define public SIDE_RDY_MASK    0x01
+
+.define OPERATION_DATA_PAUSE        SIDE_RDY_MASK + SIDE_AA0_MASK + 0
+.define OPERATION_DATA                              SIDE_AA0_MASK + 0
+.define OPERATION_A9_A0                                             0
+
+
+.program isa_bus_w
+.side_set 2 opt 
+
+.wrap_target
+	out Y, 32                   side OPERATION_DATA_PAUSE
+restart:
+    wait 1 gpio PIN_IOW         side OPERATION_DATA
+    wait 0 gpio PIN_IOW           ; IOW falling edge, no sideset to not conflict with other SMs
+    jmp pin restart               ; if this is not during DMA (DACK deasserted), go ahead and read address
+    nop                         side OPERATION_A9_A0               [2] 
+	in pins,10                  side OPERATION_A9_A0               [0]
+	out X, 32                   side OPERATION_DATA                [0]
+	jmp !X restart              side OPERATION_DATA                [0]
+our_dev:
+.wrap
+	
+.program isa_bus_r
+.side_set 2 opt 
+
+PUBLIC entry:
+restart:
+    wait 1 gpio PIN_IOR         side OPERATION_DATA
+.wrap_target
+	nop                         side OPERATION_DATA
+    wait 0 gpio PIN_IOR           ; IOW falling edge, no sideset to not conflict with other SMs
+    jmp pin restart               ; if this is not during DMA (DACK deasserted), go ahead and read address
+    nop                         side OPERATION_A9_A0               [2]
+	in pins,10                  side OPERATION_A9_A0               [0]
+	out X, 32                   side OPERATION_DATA                [0]
+	jmp !X restart              side OPERATION_DATA                [0]
+our_dev:
+	out pins, 8                 side OPERATION_DATA_PAUSE
+	out pindirs, 8              side OPERATION_DATA_PAUSE
+	wait 1 gpio PIN_IOR         side OPERATION_DATA
+	out pindirs, 8              side OPERATION_DATA
+.wrap
+
+.program dma_helper_wr
+.side_set 1
+retry:
+	wait 0 gpio PIN_DACK side 0x0
+	in x,8               side 0x0
+PUBLIC entry:
+	wait 1 gpio PIN_DACK side 0x1
+	wait 0 gpio PIN_IOW  side 0x0
+.wrap_target
+	mov x, pins          side 0x0
+	jmp pin retry        side 0x0
+.wrap
+
+
+% c-sdk {
+
+#if !PICO_NO_HARDWARE
+#include "hardware/pio.h"
+#include "hardware/clocks.h"
+#endif
+
+#include <math.h>
+
+extern uint dma_helper_wr_offset;
+
+static inline int isa_pio_divisor()
+{
+	// COMMON
+	//                                         /- cycles from set side to in muxed bus
+	//                                         | /- safety margin
+	//                                         | |       
+	//                                         | | 
+	//                                         | |       /- SN74CB3T3257 Ten
+	//                                         | |       |
+	float div = ((float)(clock_get_hz(clk_sys)/3*2))*( 9.e-9);
+	return ceil(div);
+}
+
+static inline void initialize_isa_pio(PIO isa_pio)
+{
+
+	int intdiv = isa_pio_divisor();
+	for (int i = PIN_AD0; i < PIN_AD0 + 10; i++) {
+		pio_gpio_init(isa_pio, i);    // Link the PIN to this PIO (All SM !)
+		gpio_set_slew_rate(i, GPIO_SLEW_RATE_FAST);
+	}
+	
+	hw_set_bits(&isa_pio->input_sync_bypass, 0x3ffu << PIN_AD0);
+
+	pio_gpio_init(isa_pio,PIN_SIDE+0);
+	gpio_set_slew_rate(PIN_SIDE+0, GPIO_SLEW_RATE_FAST);
+	pio_gpio_init(isa_pio,PIN_SIDE+1);
+	gpio_set_slew_rate(PIN_SIDE+1, GPIO_SLEW_RATE_FAST);
+	
+	pio_gpio_init(isa_pio,PIN_DACK);
+	pio_gpio_init(isa_pio,PIN_IOR);
+	pio_gpio_init(isa_pio,PIN_IOW);
+
+	pio_sm_set_consecutive_pindirs(isa_pio, 0, PIN_IOW, 1, false);
+	pio_sm_set_consecutive_pindirs(isa_pio, 1, PIN_IOR, 1, false);
+
+
+	// MAIN
+	
+	uint isa_bus_r_offset = pio_add_program(isa_pio, &isa_bus_r_program);
+	pio_sm_config isa_bus_r = isa_bus_r_program_get_default_config(isa_bus_r_offset);
+
+	uint isa_bus_w_offset = pio_add_program(isa_pio, &isa_bus_w_program);
+	pio_sm_config isa_bus_w = isa_bus_w_program_get_default_config(isa_bus_w_offset);
+	
+	sm_config_set_clkdiv_int_frac(&isa_bus_r, intdiv,0);
+	sm_config_set_clkdiv_int_frac(&isa_bus_w, intdiv,0);
+		
+	//                                    /- shift left
+	//                                    |      /- autopush
+	sm_config_set_in_shift( &isa_bus_r, false, true, 10);  	                     
+	sm_config_set_in_shift( &isa_bus_w, false, true, 10);  	                     
+
+	//                                  /- shift right
+	//                                  |     /- autopull
+	sm_config_set_out_shift(&isa_bus_w, true, true, 24);
+	sm_config_set_out_shift(&isa_bus_r, true, true, 24);
+	
+	sm_config_set_in_pins(&isa_bus_w, PIN_AD0);
+	sm_config_set_in_pins(&isa_bus_r, PIN_AD0);
+	
+	sm_config_set_out_pins(&isa_bus_r, PIN_AD0, 8);
+	sm_config_set_out_pins(&isa_bus_w, PIN_AD0, 0);
+	
+	sm_config_set_sideset_pins(&isa_bus_w, PIN_SIDE);
+	sm_config_set_sideset_pins(&isa_bus_r, PIN_SIDE);
+	pio_sm_set_consecutive_pindirs(isa_pio, 0, PIN_SIDE, 2, true);
+	pio_sm_set_consecutive_pindirs(isa_pio, 1, PIN_SIDE, 2, true);
+	pio_sm_set_consecutive_pindirs(isa_pio, 0, PIN_AD0, 10, false);
+	pio_sm_set_consecutive_pindirs(isa_pio, 1, PIN_AD0, 10, false);
+	
+	sm_config_set_jmp_pin(&isa_bus_w,PIN_DACK);
+	sm_config_set_jmp_pin(&isa_bus_r,PIN_DACK);
+	pio_sm_set_consecutive_pindirs(isa_pio, 0, PIN_DACK, 1, false);
+	pio_sm_set_consecutive_pindirs(isa_pio, 1, PIN_DACK, 1, false);
+
+	pio_sm_init(isa_pio, 0, isa_bus_w_offset, &isa_bus_w);
+	pio_sm_init(isa_pio, 1, isa_bus_r_offset + isa_bus_r_offset_entry, &isa_bus_r);
+	
+	// DMA
+
+	dma_helper_wr_offset = pio_add_program(isa_pio, &dma_helper_wr_program);
+
+	pio_gpio_init(isa_pio,PIN_DRQ);
+	gpio_set_slew_rate(PIN_DRQ, GPIO_SLEW_RATE_FAST);
+	pio_sm_set_consecutive_pindirs(isa_pio, 2, PIN_DRQ, 1, true);
+	
+	//enable all
+	
+	pio_enable_sm_mask_in_sync(isa_pio, 0x3);
+}
+
+static inline void initialize_dma_wr_pio(PIO isa_pio)
+{
+
+	pio_sm_set_enabled(isa_pio,2,false);
+
+	pio_sm_config dma_helper = dma_helper_wr_program_get_default_config(dma_helper_wr_offset);
+	
+	sm_config_set_clkdiv_int_frac(&dma_helper, 1,0);
+	sm_config_set_in_shift(&dma_helper, false, true /* autopush */, 8);
+	sm_config_set_in_pins(&dma_helper, PIN_AD0);
+	sm_config_set_fifo_join(&dma_helper,PIO_FIFO_JOIN_RX);
+		
+	sm_config_set_sideset_pins(&dma_helper, PIN_DRQ);
+	sm_config_set_jmp_pin(&dma_helper,PIN_IOW);
+
+	pio_sm_init(isa_pio, 2, dma_helper_wr_offset + dma_helper_wr_offset_entry, &dma_helper);
+	pio_sm_set_enabled(isa_pio,2,true);
+}
+
+%}
