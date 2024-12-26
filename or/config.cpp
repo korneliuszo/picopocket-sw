@@ -1,6 +1,7 @@
 #include "or_internal.hpp"
 #include "psram_pio.hpp"
 #include "config.hpp"
+#include "int13_handler.hpp"
 
 static volatile bool config_callback;
 
@@ -68,7 +69,8 @@ static void config_entry (Thread_SHM * thread)
 		thread->callback_end();
 	}
 
-	if(!ramdisk_handle(thread,0x00)) // don't chain only error
+	if(!int13_handle<ramdisk_read,ramdisk_write>(thread,0x00,
+					32,2,32,32*2*32)) // don't chain only error
 	{
 		auto params = thread->get_entry();
 		params.regs.regs.ax = 0x0101;

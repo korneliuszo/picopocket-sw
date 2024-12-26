@@ -30,6 +30,7 @@ const OROMHandler * const handlers[] =
 {
 		&config_handler,
 		&ramdisk_handler,
+		&disk_mapper_handler,
 		&monitor_handler,
 		&int19_handler,
 };
@@ -219,6 +220,7 @@ void optionrom_install(Thread * main)
 
 	monitor_install(main);
 	int19_install(main);
+	disk_mapper_install(main);
 	ramdisk_install(main);
 	config_install(main);
 

@@ -8,6 +8,7 @@ add_library(or
 	monitor.cpp
 	ramdisk.cpp
 	config.cpp
+	disk_mapper.cpp
 )
 	
 if(PICOPOCKET_SIM)

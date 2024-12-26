@@ -68,10 +68,13 @@ int main(void)
 	while(1)
 	{
 		tud_task(); // tinyusb device task
+		main_thread.yield();
 		network_poll();
+		main_thread.yield();
 		optionrom_start_worker(&main_thread);
 		main_thread.yield();
 		uart1.poll();
+		main_thread.yield();
 	}
 
 	return 0;

@@ -279,9 +279,10 @@ void int19_install(Thread * main);
 extern const OROMHandler int19_handler;
 
 void ramdisk_install(Thread * main);
-bool ramdisk_handle(Thread_SHM * thread, uint8_t drive_no);
 extern const OROMHandler ramdisk_handler;
 
 void config_install(Thread * main);
 extern const OROMHandler config_handler;
 
+void disk_mapper_install(Thread * main);
+extern const OROMHandler disk_mapper_handler;
