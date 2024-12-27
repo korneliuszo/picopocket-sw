@@ -327,7 +327,7 @@ public:
 	static constexpr char name[] = "BIOS_SEGMENT";
 };
 
-class MONITOR_AUTOBOOT : public Impl::CElem<MONITOR_AUTOBOOT,UID::MONITOR_AUTOBOOT,Impl::Bool,true>{
+class MONITOR_AUTOBOOT : public Impl::CElem<MONITOR_AUTOBOOT,UID::MONITOR_AUTOBOOT,Impl::Bool,false>{
 public:
 	static constexpr bool coldboot_required = true;
 	static constexpr char help[] = "Monitor autoboot";
