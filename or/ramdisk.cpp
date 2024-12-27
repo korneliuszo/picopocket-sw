@@ -30,7 +30,7 @@ static volatile uint32_t int13chain = 0;
 static volatile uint8_t int13disk_no = 0;
 static bool ramdisk_callback;
 
-static bool ramdisk_decide(const ENTRY_STATE & state)
+static bool ramdisk_decide(const volatile ENTRY_STATE & state)
 {
 	if(state.entry == 1 && state.irq_no == 0x19)
 		return true;
@@ -42,10 +42,9 @@ static bool ramdisk_decide(const ENTRY_STATE & state)
 
 static void ramdisk_entry (Thread_SHM * thread)
 {
-	auto entry = thread->get_entry();
-	if(entry.irq_no == 0x19)
+	if(thread->params.irq_no == 0x19)
 	{
-		if(entry.regs.regs.rettype&0x80)
+		if(thread->params.regs.regs.rettype&0x80)
 			thread->callback_end();
 		bool autoboot = Config::RAMDISK_INSTALL::val.ival;
 		thread->putstr("PicoPocket ramdisk: press R to ");

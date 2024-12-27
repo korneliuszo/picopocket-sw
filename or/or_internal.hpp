@@ -61,6 +61,7 @@ struct [[gnu::packed]] STACKCODE8{
 struct Thread_SHM : public StaticThread<1024>
 {
 	CMD cmd;
+	volatile ENTRY_STATE params;
 	void wait_for_exec()
 	{
 		while(cmd.command)
@@ -140,11 +141,12 @@ struct Thread_SHM : public StaticThread<1024>
 			wait_for_exec();
 		}
 	}
-	void set_return(IRQ_REGS entry)
+private:
+	void set_return(volatile IRQ_REGS& entry)
 	{
 		cmd.recv = nullptr;
 		BuffList send = {
-				entry.data,
+				const_cast<uint8_t*>(entry.data),
 				sizeof(entry.data),
 				nullptr
 		};
@@ -152,16 +154,20 @@ struct Thread_SHM : public StaticThread<1024>
 		cmd.command = 0x02;
 		wait_for_exec();
 	}
+public:
 	void chain(uint32_t chain)
 	{
-		auto entry = get_entry();
-		entry.regs.regs.ph1 = chain;
-		entry.regs.regs.ph2 = chain>>16;
-		entry.regs.regs.rettype = 0x00;
-		set_return(entry.regs);
+		params.regs.regs.ph1 = chain;
+		params.regs.regs.ph2 = chain>>16;
+		params.regs.regs.rettype = 0x00;
 	}
 	void callback_end()
 	{
+		set_return(params.regs);
+		callback_end_noset();
+	}
+	void callback_end_noset()
+		{
 		cmd.recv = nullptr;
 		cmd.send = nullptr;
 		cmd.command = 0x03;
@@ -184,7 +190,7 @@ struct Thread_SHM : public StaticThread<1024>
 				},
 				.code = { 0xCD, 0x10, 0xCB }
 		};
-		regs.regs.f = get_entry().regs.regs.f;
+		regs.regs.f = params.regs.regs.f;
 
 		while(*str)
 		{
@@ -230,11 +236,12 @@ struct Thread_SHM : public StaticThread<1024>
 				},
 				.code = { 0xCD, 0x16, 0xCB }
 		};
-		regs.regs.f = get_entry().regs.regs.f;
+		regs.regs.f = params.regs.regs.f;
 		regs.regs.ax = 0x0100;
 		stackcode8(&regs);
 		return regs.regs.ax;
 	}
+	/*
 	ENTRY_STATE get_entry()
 	{
 		ENTRY_STATE ret;
@@ -263,11 +270,12 @@ struct Thread_SHM : public StaticThread<1024>
 		}
 		return ret;
 	}
+	*/
 
 };
 
 struct OROMHandler {
-	bool (*decide)(const ENTRY_STATE &);
+	bool (*decide)(const volatile ENTRY_STATE &);
 	void (*entry)(Thread_SHM *);
 };
 

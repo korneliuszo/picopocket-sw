@@ -7,7 +7,7 @@ void int19_install(Thread * main)
 
 static volatile uint32_t int19chain = 0;
 
-static bool int19_decide(const ENTRY_STATE & state)
+static bool int19_decide(const volatile ENTRY_STATE & state)
 {
 	if(state.entry == 0) //boot
 		return true;
@@ -18,17 +18,16 @@ static bool int19_decide(const ENTRY_STATE & state)
 
 static void int19_entry (Thread_SHM * thread)
 {
-	auto entry = thread->get_entry();
-	if(entry.entry == 0)
+	if(thread->params.entry == 0)
 	{
 		int19chain = thread->install_irq(0x19);
 		static const char str[] = "PicoPocket int19 installed\r\n";
 		thread->putstr(str);
 		thread->callback_end();
 	}
-	else if(int19chain && entry.entry == 1 && entry.irq_no == 0x19)
+	else if(int19chain && thread->params.entry == 1 && thread->params.irq_no == 0x19)
 	{
-		if(entry.regs.regs.rettype & 0x80)
+		if(thread->params.regs.regs.rettype & 0x80)
 			thread->callback_end();
 		thread->chain(int19chain);
 		static const char str[] = "PicoPocket int19 chained\r\n";

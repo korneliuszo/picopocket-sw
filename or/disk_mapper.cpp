@@ -149,7 +149,7 @@ void disk_mapper_install(Thread * main)
 
 static bool disk_manager_callback;
 
-static bool disk_mapper_decide(const ENTRY_STATE & state)
+static bool disk_mapper_decide(const volatile ENTRY_STATE & state)
 {
 	if(state.entry == 0) //boot
 		return false;
@@ -260,12 +260,11 @@ static uint32_t int13chain = 0;
 
 static void disk_mapper_entry (Thread_SHM * thread)
 {
-	auto entry = thread->get_entry();
-	if(entry.irq_no == 0x19)
+	if(thread->params.irq_no == 0x19)
 	{
-		if(entry.regs.regs.rettype& 0x80)
+		if(thread->params.regs.regs.rettype& 0x80)
 			thread->callback_end();
-		bool autoboot = true;//Config::MONITOR_AUTOBOOT::val.ival;
+		bool autoboot = false;//Config::MONITOR_AUTOBOOT::val.ival;
 		thread->putstr("PicoPocket disk mapper: press D to ");
 		if(autoboot)
 			thread->putstr("stop ");
@@ -290,10 +289,9 @@ static void disk_mapper_entry (Thread_SHM * thread)
 	if(int13chain)
 		thread->chain(int13chain);
 
-	auto params = thread->get_entry();
 	for(auto map:disk_map)
 	{
-		if((params.regs.regs.dx & 0xff) == map.from)
+		if((thread->params.regs.regs.dx & 0xff) == map.from)
 		{
 			if(map.to == 0xff)
 			{
@@ -302,8 +300,7 @@ static void disk_mapper_entry (Thread_SHM * thread)
 			}
 			else
 			{
-				params.regs.regs.dx = (params.regs.regs.dx & 0xff00) | map.to;
-				thread->set_return(params.regs);
+				thread->params.regs.regs.dx = (thread->params.regs.regs.dx & 0xff00) | map.to;
 			}
 			break;
 		}

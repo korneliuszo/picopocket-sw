@@ -205,7 +205,7 @@ void monitor_install(Thread * main)
 
 static bool monitor_callback;
 
-static bool monitor_decide(const ENTRY_STATE & state)
+static bool monitor_decide(const volatile ENTRY_STATE & state)
 {
 	if(state.entry == 0) //boot
 		return false;
@@ -216,10 +216,9 @@ static bool monitor_decide(const ENTRY_STATE & state)
 
 static void monitor_entry (Thread_SHM * thread)
 {
-	auto entry = thread->get_entry();
-	if(entry.irq_no == 0x19)
+	if(thread->params.irq_no == 0x19)
 	{
-		if(entry.regs.regs.rettype& 0x80)
+		if(thread->params.regs.regs.rettype& 0x80)
 			thread->callback_end();
 		bool autoboot = Config::MONITOR_AUTOBOOT::val.ival;
 		thread->putstr("PicoPocket monitor: press M to ");
@@ -305,7 +304,7 @@ static void monitor_entry (Thread_SHM * thread)
 				{
 					crstate.recvbuff.commit_rdbuff(slen);
 					crstate.sendbuff.commit_wrbuff(rlen);
-					thread->callback_end();
+					thread->callback_end_noset();
 				}
 				thread->cmd.send = req[0].len ? &req[0] : nullptr;
 				thread->cmd.recv = req[2].len ? &req[2] : nullptr;

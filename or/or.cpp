@@ -51,7 +51,7 @@ struct ORHandler : public IoIface::OHandler {
 	ENTRY_STATE entry_state;
 	volatile Thread_SHM::ENTRY thread_entry;
 	volatile bool thread_stopping;
-	volatile bool thread_state = false;
+	//volatile bool thread_state = false;
 	const OROMHandler * const *itr_hndlr;
 	IoIface::Arbitration arbiter;
 	int bytes;
@@ -80,6 +80,7 @@ struct ORHandler : public IoIface::OHandler {
 				if((*itr_hndlr)->decide(entry_state))
 				{
 					thread_data.cmd.command = 0x00; //notYET
+					*const_cast<ENTRY_STATE*>(&thread_data.params) = entry_state;
 					thread_entry = reinterpret_cast<Thread_SHM::ENTRY>((*itr_hndlr)->entry);
 					itr_hndlr++;
 					arbiter.reset();
@@ -138,17 +139,17 @@ struct ORHandler : public IoIface::OHandler {
 				{
 					while(itr_hndlr < &handlers[sizeof(handlers)/sizeof(handlers[0])])
 					{
-						if((*itr_hndlr)->decide(entry_state))
+						if((*itr_hndlr)->decide(thread_data.params))
 						{
 							thread_data.cmd.command = 0;
-							thread_stopping = thread_state;
+							thread_stopping = true;
 							thread_entry = reinterpret_cast<Thread_SHM::ENTRY>((*itr_hndlr)->entry);
 							itr_hndlr++;
 							return 0x00; //override
 						}
 						itr_hndlr++;
 					}
-					thread_stopping = thread_state;
+					thread_stopping = true;
 					thread_data.cmd.command = 0;
 					state = STATE::NO_OP;
 					return cmd;
@@ -191,7 +192,7 @@ struct ORHandler : public IoIface::OHandler {
 	void reset()
 	{
 		state = STATE::READ_ENTRY;
-		thread_stopping = thread_state;
+		thread_stopping = true;
 	}
 };
 
@@ -239,25 +240,16 @@ void optionrom_start_worker(Thread * main)
 	monitor_poll();
 	for(size_t i=0;i<1;i++)
 	{
-		if(handles[i].thread_state)
+		if(handles[i].thread_stopping)
 		{
-			if(handles[i].thread_stopping)
-			{
-				handles[i].thread_state = false;
-				handles[i].thread_data.disconnect(); //we aren't even in disconnected task
-				handles[i].thread_stopping = false;
-			}
+			handles[i].thread_data.disconnect(); //we aren't even in disconnected task
+			handles[i].thread_stopping = false;
 		}
-		else
+		if(handles[i].thread_entry && !handles[i].thread_stopping)
 		{
-			if(handles[i].thread_entry)
-			{
-				auto tmp = handles[i].thread_entry;
-				handles[i].thread_entry = nullptr;
-				handles[i].thread_state = true;
-				handles[i].thread_stopping = false;
-				handles[i].thread_data.run(main,tmp);
-			}
+			auto tmp = handles[i].thread_entry;
+			handles[i].thread_entry = nullptr;
+			handles[i].thread_data.run(main,tmp);
 		}
 	}
 }

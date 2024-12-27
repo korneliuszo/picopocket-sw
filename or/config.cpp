@@ -10,7 +10,7 @@ void config_install(Thread * main)
 
 }
 
-static bool config_decide(const ENTRY_STATE & state)
+static bool config_decide(const volatile ENTRY_STATE & state)
 {
 	if(state.entry == 1 && state.irq_no == 0x19)
 		return true;
@@ -29,10 +29,9 @@ extern "C" const uint8_t _binary_config_img_start[];
 
 static void config_entry (Thread_SHM * thread)
 {
-	auto entry = thread->get_entry();
-	if(entry.irq_no == 0x19)
+	if(thread->params.irq_no == 0x19)
 	{
-		if(entry.regs.regs.rettype&0x80)
+		if(thread->params.regs.regs.rettype&0x80)
 			thread->callback_end();
 		thread->putstr("PicoPocket config: press C to ");
 		thread->putstr("enter\r\n");
@@ -51,10 +50,8 @@ static void config_entry (Thread_SHM * thread)
 
 		thread->chain(0x00600000);
 
-		auto params = thread->get_entry();
-		params.regs.regs.bx = 0x0000;
-		params.regs.regs.rettype = 0x80;
-		thread->set_return(params.regs);
+		thread->params.regs.regs.bx = 0x0000;
+		thread->params.regs.regs.rettype = 0x80;
 
 		{
 			const uint8_t * data = _binary_config_img_start;
@@ -72,11 +69,9 @@ static void config_entry (Thread_SHM * thread)
 	if(!int13_handle<ramdisk_read,ramdisk_write>(thread,0x00,
 					32,2,32,32*2*32)) // don't chain only error
 	{
-		auto params = thread->get_entry();
-		params.regs.regs.ax = 0x0101;
-		params.regs.regs.rf |= 0x0001;
-		params.regs.regs.rettype = 1;
-		thread->set_return(params.regs);
+		thread->params.regs.regs.ax = 0x0101;
+		thread->params.regs.regs.rf |= 0x0001;
+		thread->params.regs.regs.rettype = 1;
 	}
 
 

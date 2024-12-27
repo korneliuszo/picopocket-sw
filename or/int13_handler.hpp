@@ -2,7 +2,7 @@
 #include "or_internal.hpp"
 #include "psram_pio.hpp"
 
-static uint32_t params2lba(const ENTRY_STATE& params,
+static uint32_t params2lba(const volatile ENTRY_STATE& params,
 		uint16_t C,
 		uint8_t H,
 		uint8_t S
@@ -23,52 +23,51 @@ struct [[gnu::packed]] DAP {
 	uint32_t lbal;
 };
 
-static DAP get_dap(Thread_SHM * thread, const ENTRY_STATE& params)
+static DAP get_dap(Thread_SHM * thread)
 {
 	DAP ret;
-	thread->getmem(params.regs.regs.ds,params.regs.regs.si,reinterpret_cast<uint8_t*>(&ret),sizeof(ret));
+	thread->getmem(thread->params.regs.regs.ds,thread->params.regs.regs.si,reinterpret_cast<uint8_t*>(&ret),sizeof(ret));
 	return ret;
 }
 
-static void set_dap(Thread_SHM * thread, const ENTRY_STATE& params, DAP * dap)
+static void set_dap(Thread_SHM * thread, DAP * dap)
 {
-	thread->putmem(params.regs.regs.ds,params.regs.regs.si,reinterpret_cast<uint8_t*>(dap),sizeof(*dap));
+	thread->putmem(thread->params.regs.regs.ds,thread->params.regs.regs.si,reinterpret_cast<uint8_t*>(dap),sizeof(*dap));
 }
 
 static uint8_t ramdisk_sector[2][512];
 
-inline auto ramdisk_read(Thread_SHM * thread, uint8_t drive_no, uint32_t LBA,uint8_t sector[512])
+inline auto ramdisk_read(Thread_SHM * thread, uint8_t drive_no, uint32_t LBA,uint8_t *sector)
 {
 	return PSRAM::PSRAM::read_async_mem(LBA*512,sector,512);
 }
 
-inline auto ramdisk_write(Thread_SHM * thread, uint8_t drive_no, uint32_t LBA,uint8_t sector[512])
+inline auto ramdisk_write(Thread_SHM * thread, uint8_t drive_no, uint32_t LBA,uint8_t *sector)
 {
 	return PSRAM::PSRAM::write_async_mem(LBA*512,sector,512);
 }
 
 
 template<auto sread, auto swrite>
-inline bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
+bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 		uint16_t C,
 		uint8_t H,
 		uint8_t S,
 		uint32_t LBA)
 {
-	auto params = thread->get_entry();
-	if ((params.regs.regs.dx & 0xff) != drive_no)
+	if ((thread->params.regs.regs.dx & 0xff) != drive_no)
 		return false;
-	switch(params.regs.regs.ax>>8)
+	switch(thread->params.regs.regs.ax>>8)
 	{
 	case 0x00: // reset
-		params.regs.regs.ax = 0;
-		params.regs.regs.rf &= ~0x0001;
+		thread->params.regs.regs.ax = 0;
+		thread->params.regs.regs.rf &= ~0x0001;
 		break;
 	case 0x02: // read
 	 {
-		size_t sectors = params.regs.regs.ax & 0xff;
-		uint32_t addr = params2lba(params,C,H,S);
-		uint16_t pcaddr = params.regs.regs.bx;
+		size_t sectors = thread->params.regs.regs.ax & 0xff;
+		uint32_t addr = params2lba(thread->params,C,H,S);
+		uint16_t pcaddr = thread->params.regs.regs.bx;
 		if(sectors)
 		{
 			auto cpl = sread(thread,drive_no,addr,ramdisk_sector[0]);
@@ -78,7 +77,7 @@ inline bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 					thread->yield();
 				if(s+1<sectors)
 					cpl = sread(thread,drive_no,addr+1,ramdisk_sector[1]);
-				thread->putmem(params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
+				thread->putmem(thread->params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
 				if(s+1<sectors)
 				{
 					while(!cpl.complete_trigger())
@@ -86,30 +85,28 @@ inline bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 					addr+=2;
 					if(s+2<sectors)
 						cpl = sread(thread,drive_no,addr,ramdisk_sector[0]);
-					thread->putmem(params.regs.regs.es,pcaddr+512,ramdisk_sector[1],512);
+					thread->putmem(thread->params.regs.regs.es,pcaddr+512,ramdisk_sector[1],512);
 					pcaddr+=1024;
 				}
 			}
 		}
-		params.regs.regs.ax = sectors | (0x00<<8);
-		params.regs.regs.rf &= ~0x0001;
+		thread->params.regs.regs.ax = sectors | (0x00<<8);
+		thread->params.regs.regs.rf &= ~0x0001;
 	 }
 	 break;
 	case 0x03: // write
 	 {
-		size_t sectors = params.regs.regs.ax & 0xff;
-		uint32_t addr = params2lba(params,C,H,S)*1;
-		uint16_t pcaddr = params.regs.regs.bx;
+		size_t sectors = thread->params.regs.regs.ax & 0xff;
+		uint32_t addr = params2lba(thread->params,C,H,S);
+		uint16_t pcaddr = thread->params.regs.regs.bx;
 		if(sectors)
 		{
-			thread->getmem(params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
+			thread->getmem(thread->params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
 			for(size_t s=0;s<sectors;s+=2)
 			{
 				auto cpl = swrite(thread,drive_no,addr,ramdisk_sector[0]);
-				addr+=1;
-				pcaddr+=512;
 				if(s+1<sectors)
-					thread->getmem(params.regs.regs.es,pcaddr+512,ramdisk_sector[1],512);
+					thread->getmem(thread->params.regs.regs.es,pcaddr+512,ramdisk_sector[1],512);
 				while(!cpl.complete_trigger())
 					thread->yield();
 				if(s+1<sectors)
@@ -118,49 +115,49 @@ inline bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 					addr+=2;
 					pcaddr+=1024;
 					if(s+2<sectors)
-						thread->getmem(params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
+						thread->getmem(thread->params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
 					while(!cpl.complete_trigger())
 						thread->yield();
 				}
 			}
 		}
-		params.regs.regs.ax = sectors | (0x00<<8);
-		params.regs.regs.rf &= ~0x0001;
+		thread->params.regs.regs.ax = sectors | (0x00<<8);
+		thread->params.regs.regs.rf &= ~0x0001;
 	 }
 	 break;
 	case 0x08: // get_chs
 	 {
-		params.regs.regs.bx = 0;
+		thread->params.regs.regs.bx = 0;
 		uint8_t c = C-1;
-		params.regs.regs.cx = ((c&0xff) <<8) | ((c&0x300)>>(8-6)) | S;
+		thread->params.regs.regs.cx = ((c&0xff) <<8) | ((c&0x300)>>(8-6)) | S;
 
 		uint8_t disks;
 		thread->getmem(0,0x475,&disks,1);
 
-		params.regs.regs.dx = (H-1 << 8) | disks;
+		thread->params.regs.regs.dx = (H-1 << 8) | disks;
 		if(!(drive_no &0x80))
 		{
-			params.regs.regs.di = 0;
-			params.regs.regs.es = 0;
+			thread->params.regs.regs.di = 0;
+			thread->params.regs.regs.es = 0;
 		}
-		params.regs.regs.ax &= 0x00ff;
-		params.regs.regs.rf &= ~0x0001;
+		thread->params.regs.regs.ax &= 0x00ff;
+		thread->params.regs.regs.rf &= ~0x0001;
 	 }
 	 break;
 	case 0x15: // dasd
 	 {
 		if(drive_no &0x80)
 		{
-			params.regs.regs.ax = 0x0003;
+			thread->params.regs.regs.ax = 0x0003;
 			uint32_t lba = LBA;
-			params.regs.regs.cx = lba>>16;
-			params.regs.regs.dx = lba;
-			params.regs.regs.rf &= ~0x0001;
+			thread->params.regs.regs.cx = lba>>16;
+			thread->params.regs.regs.dx = lba;
+			thread->params.regs.regs.rf &= ~0x0001;
 		}
 		else
 		{
-			params.regs.regs.ax &= 0x0001;
-			params.regs.regs.rf &= ~0x0001;
+			thread->params.regs.regs.ax &= 0x0001;
+			thread->params.regs.regs.rf &= ~0x0001;
 		}
 	 }
 	 break;
@@ -168,8 +165,8 @@ inline bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 	case 0x24: // set multiple blocks
 	case 0x25: // identify drive
 	default:
-		params.regs.regs.ax = 0x0101;
-		params.regs.regs.rf |= 0x0001;
+		thread->params.regs.regs.ax = 0x0101;
+		thread->params.regs.regs.rf |= 0x0001;
 		break;
 	case 0x01: // status
 	case 0x09: // init disk
@@ -181,18 +178,18 @@ inline bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 	case 0x14: // diagnostic
 	case 0x04: // verify
 	case 0x44: // ext_verify
-		params.regs.regs.ax = 0x0000;
-		params.regs.regs.rf &= ~0x0001;
+		thread->params.regs.regs.ax = 0x0000;
+		thread->params.regs.regs.rf &= ~0x0001;
 		break;
 	case 0x41: // ext_check
-		params.regs.regs.bx = 0xAA55;
-		params.regs.regs.cx = 0x01;
-		params.regs.regs.ax = 0x2100 | (params.regs.regs.ax&0xFF);
-		params.regs.regs.rf &= ~0x0001;
+		thread->params.regs.regs.bx = 0xAA55;
+		thread->params.regs.regs.cx = 0x01;
+		thread->params.regs.regs.ax = 0x2100 | (thread->params.regs.regs.ax&0xFF);
+		thread->params.regs.regs.rf &= ~0x0001;
 		break;
 	case 0x42: // ext_read
 	 {
-		auto d = get_dap(thread,params);
+		auto d = get_dap(thread);
 		uint32_t addr = d.lbal;
 		uint16_t pcaddr = d.off;
 		if(d.sectors)
@@ -204,7 +201,7 @@ inline bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 					thread->yield();
 				if(s+1<d.sectors)
 					cpl = sread(thread,drive_no,addr+1,ramdisk_sector[1]);
-				thread->putmem(params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
+				thread->putmem(d.seg,pcaddr,ramdisk_sector[0],512);
 				if(s+1<d.sectors)
 				{
 					while(!cpl.complete_trigger())
@@ -212,30 +209,28 @@ inline bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 					addr+=2;
 					if(s+2<d.sectors)
 						cpl = sread(thread,drive_no,addr,ramdisk_sector[0]);
-					thread->putmem(params.regs.regs.es,pcaddr+512,ramdisk_sector[1],512);
+					thread->putmem(d.seg,pcaddr+512,ramdisk_sector[1],512);
 					pcaddr+=1024;
 				}
 			}
 		}
-		params.regs.regs.ax &= 0x00ff;
-		params.regs.regs.rf &= ~0x0001;
+		thread->params.regs.regs.ax &= 0x00ff;
+		thread->params.regs.regs.rf &= ~0x0001;
 	 }
 	 break;
 	case 0x43: // ext_write
 	 {
-		auto d = get_dap(thread,params);
-		uint32_t addr = d.lbal*1;
+		auto d = get_dap(thread);
+		uint32_t addr = d.lbal;
 		uint16_t pcaddr = d.off;
 		if(d.sectors)
 		{
-			thread->getmem(params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
+			thread->getmem(d.seg,pcaddr,ramdisk_sector[0],512);
 			for(size_t s=0;s<d.sectors;s+=2)
 			{
 				auto cpl = swrite(thread,drive_no,addr,ramdisk_sector[0]);
-				addr+=1;
-				pcaddr+=512;
 				if(s+1<d.sectors)
-					thread->getmem(params.regs.regs.es,pcaddr+512,ramdisk_sector[1],512);
+					thread->getmem(d.seg,pcaddr+512,ramdisk_sector[1],512);
 				while(!cpl.complete_trigger())
 					thread->yield();
 				if(s+1<d.sectors)
@@ -244,14 +239,14 @@ inline bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 					addr+=2;
 					pcaddr+=1024;
 					if(s+2<d.sectors)
-						thread->getmem(params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
+						thread->getmem(d.seg,pcaddr,ramdisk_sector[0],512);
 					while(!cpl.complete_trigger())
 						thread->yield();
 				}
 			}
 		}
-		params.regs.regs.ax &= 0x00ff;
-		params.regs.regs.rf &= ~0x0001;
+		thread->params.regs.regs.ax &= 0x00ff;
+		thread->params.regs.regs.rf &= ~0x0001;
 	 }
 	 break;
 	case 0x48: // ext_params
@@ -275,13 +270,12 @@ inline bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 			512,
 			0
 		};
-		thread->putmem(params.regs.regs.ds,params.regs.regs.si,reinterpret_cast<uint8_t*>(&edp),sizeof(edp));
-		params.regs.regs.ax &= 0x00ff;
-		params.regs.regs.rf &= ~0x0001;
+		thread->putmem(thread->params.regs.regs.ds,thread->params.regs.regs.si,reinterpret_cast<uint8_t*>(&edp),sizeof(edp));
+		thread->params.regs.regs.ax &= 0x00ff;
+		thread->params.regs.regs.rf &= ~0x0001;
 	 }
 	 break;
 	}
-	params.regs.regs.rettype = 1;
-	thread->set_return(params.regs);
+	thread->params.regs.regs.rettype = 1;
 	return true;
 }
