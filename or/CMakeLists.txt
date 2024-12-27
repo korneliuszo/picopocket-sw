@@ -1,18 +1,10 @@
 add_subdirectory(8088)
 add_subdirectory(config)
 add_subdirectory(mbr)
-
-add_library(or
-	or.cpp
-	int19_install.cpp
-	monitor.cpp
-	ramdisk.cpp
-	config.cpp
-	disk_mapper.cpp
-)
 	
 if(PICOPOCKET_SIM)
 	set(OR_HWLIBS)
+	set(OR_HWSRC)
 else()
 	set(OR_HWLIBS 
 		hardware_flash
@@ -21,7 +13,20 @@ else()
 		psram_pio
 		ar1021_pio
 	)
+	set(OR_HWSRC
+		disk_mapper.cpp
+	)
 endif()
+
+add_library(or
+	or.cpp
+	int19_install.cpp
+	monitor.cpp
+	ramdisk.cpp
+	config.cpp
+	${OR_HWSRC}	
+)
+
 target_link_libraries(or 
 	PRIVATE
 		${WORKER}

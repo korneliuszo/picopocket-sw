@@ -30,7 +30,9 @@ const OROMHandler * const handlers[] =
 {
 		&config_handler,
 		&ramdisk_handler,
+#ifndef PICOPOCKET_SIM
 		&disk_mapper_handler,
+#endif
 		&monitor_handler,
 		&int19_handler,
 };
@@ -221,7 +223,9 @@ void optionrom_install(Thread * main)
 
 	monitor_install(main);
 	int19_install(main);
+#ifndef PICOPOCKET_SIM
 	disk_mapper_install(main);
+#endif
 	ramdisk_install(main);
 	config_install(main);
 
