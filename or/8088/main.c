@@ -125,7 +125,10 @@ int select_next(
 			is_one = inp(port_no) == 0x5a;
 
 			if(!is_zero && !is_one)
+			{
+				outp(port_no+1,0x00);
 				return 0;
+			}
 
 			if(is_zero && is_one)
 			{
