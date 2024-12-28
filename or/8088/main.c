@@ -111,8 +111,7 @@ int select_next(
 	outp(port_no+1,0x01);
 	outp(port_no,irq);
 	outp(port_no,codeplace);
-	for(uint8_t far * i=(uint8_t far *)params, far *e = i+sizeof(*params);i<e;i++)
-		outp(port_no,*i);
+	getmem((uint8_t far *)params,sizeof(*params),port_no);
 	outp(port_no,rettype);
 
 	for(i=7;i>=0;i--)
@@ -198,7 +197,7 @@ int start(uint16_t irq, IRQ_DATA far * params)
 		switch(req)
 		{
 		case 0x03:
-			outp(port_no+1,0x00); //TODO: full isolation
+			outp(port_no+1,0x00);
 			if(select_next(LastID,&lastConflictZero,&lastDevice,
 					irq,
 					codeplace,
@@ -215,18 +214,15 @@ int start(uint16_t irq, IRQ_DATA far * params)
 		{
 			STACKCODE_DATA_t regs;
 			uint8_t code[8];
-			for(uint8_t far * i=(uint8_t far *)&regs, far *e = i+sizeof(regs);i<e;i++)
-				*i=inph(port_no);
-			for(uint8_t far * i=(uint8_t far *)code, far *e = i+8;i<e;i++)
-				*i=inph(port_no);
+			putmem((uint8_t far *)&regs,sizeof(regs),port_no);
+			putmem(&code,sizeof(code),port_no);
 			stackcode(&regs,code);
-			for(uint8_t far * i=(uint8_t far*)&regs, far *e = i+sizeof(regs);i<e;i++)
-				outp(port_no,*i);
+			getmem((uint8_t far *)&regs,sizeof(regs),port_no);
+
 			continue;
 		 }
 		case 0x02:
-			for(uint8_t far * i=(uint8_t far *)params, far *e = i+sizeof(*params);i<e;i++)
-				*i=inph(port_no);
+			putmem((uint8_t far *)params,sizeof(*params),port_no);
 			rettype = inph(port_no);
 			continue;
 		case 0x08:
