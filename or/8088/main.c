@@ -58,10 +58,7 @@ uint8_t inph(unsigned port);
 
 void putmem(uint8_t far * addr,unsigned len, unsigned port);
 #pragma aux putmem = \
-		"l1:" \
-		"in al,dx" \
-		"stosb" \
-		"loop l1" \
+		"rep insb" \
 		parm [es di] [cx] [dx] \
 		modify exact [al cx di cx];
 
@@ -70,10 +67,7 @@ void getmem(uint8_t far * addr,unsigned len, unsigned port);
 		"push ds" \
 		"mov ds,cx" \
 		"mov cx,bx" \
-		"l1:" \
-		"lodsb" \
-		"out dx,al" \
-		"loop l1" \
+		"rep outsb" \
 		"pop ds" \
 		parm [cx si] [bx] [dx] \
 		modify exact [al cx si cx];
