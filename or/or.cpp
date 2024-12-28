@@ -52,6 +52,7 @@ struct ORHandler : public IoIface::OHandler {
 	Thread_SHM thread_data;
 	ENTRY_STATE entry_state;
 	volatile Thread_SHM::ENTRY thread_entry;
+	Thread_SHM::ENTRY thread_entry_cache;
 	volatile bool thread_stopping;
 	//volatile bool thread_state = false;
 	const OROMHandler * const *itr_hndlr;
@@ -81,9 +82,8 @@ struct ORHandler : public IoIface::OHandler {
 			{
 				if((*itr_hndlr)->decide(entry_state))
 				{
-					thread_data.cmd.command = 0x00; //notYET
 					*const_cast<ENTRY_STATE*>(&thread_data.params) = entry_state;
-					thread_entry = reinterpret_cast<Thread_SHM::ENTRY>((*itr_hndlr)->entry);
+					thread_entry_cache = reinterpret_cast<Thread_SHM::ENTRY>((*itr_hndlr)->entry);
 					itr_hndlr++;
 					arbiter.reset();
 					state = STATE::ARBITRATION;
@@ -100,6 +100,8 @@ struct ORHandler : public IoIface::OHandler {
 			case IoIface::Arbitration::RET::CONTINUE:
 				return;
 			case IoIface::Arbitration::RET::WON:
+				thread_data.cmd.command = 0x00; //notYET
+				thread_entry = thread_entry_cache;
 				state = STATE::SEND_CMD;
 				return;
 			default:
@@ -139,20 +141,18 @@ struct ORHandler : public IoIface::OHandler {
 			{
 				if(cmd == 0x03) //continue boot
 				{
+					thread_stopping = true;
+					thread_data.cmd.command = 0;
 					while(itr_hndlr < &handlers[sizeof(handlers)/sizeof(handlers[0])])
 					{
 						if((*itr_hndlr)->decide(thread_data.params))
 						{
-							thread_data.cmd.command = 0;
-							thread_stopping = true;
 							thread_entry = reinterpret_cast<Thread_SHM::ENTRY>((*itr_hndlr)->entry);
 							itr_hndlr++;
 							return 0x00; //override
 						}
 						itr_hndlr++;
 					}
-					thread_stopping = true;
-					thread_data.cmd.command = 0;
 					state = STATE::NO_OP;
 					return cmd;
 				}
