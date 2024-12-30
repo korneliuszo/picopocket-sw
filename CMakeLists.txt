@@ -27,6 +27,7 @@ endif()
 add_subdirectory(ioface)
 add_subdirectory(or)
 add_subdirectory(16550)
+add_subdirectory(audio)
 
 add_executable(picopocket-sw
 	main.cpp
@@ -70,6 +71,7 @@ target_link_libraries(picopocket-sw PRIVATE
 	ioiface
 	uart_16550
 	jmpcoro
+	audio
 )
 
 target_include_directories(picopocket-sw 

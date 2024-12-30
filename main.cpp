@@ -21,6 +21,7 @@
 #include <ioiface.hpp>
 #include <config_iface.hpp>
 #include "16550/uart_tcp_server.hpp"
+#include "audio/audio.hpp"
 
 constexpr uint32_t PICO_Freq=250; //PM_SYS_CLK;
 
@@ -55,6 +56,7 @@ int main(void)
 	IoIface::ioiface_install();
 	install_config_iface();
 	uart1.connect(0x3F8,4,5556);
+	sbdsp_install(&main_thread);
 
 	ISA_Init();
 
@@ -74,6 +76,8 @@ int main(void)
 		optionrom_start_worker(&main_thread);
 		main_thread.yield();
 		uart1.poll();
+		main_thread.yield();
+		sbdsp_poll(&main_thread);
 		main_thread.yield();
 	}
 
