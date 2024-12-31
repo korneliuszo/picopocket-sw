@@ -7,7 +7,5 @@ target_link_libraries(audio
 		audio_dma
 		${WORKER}
 		jmpcoro
+		common
 )
-
-
-target_include_directories(audio PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../)

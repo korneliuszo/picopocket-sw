@@ -16,5 +16,6 @@ target_link_libraries(ioiface
 	PRIVATE
 		${WORKER}
 		${OR_HWLIBS}
-)	
-target_include_directories(ioiface PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+		common
+)
+target_include_directories(ioiface PUBLIC ${CMAKE_CURRENT_LIST_DIR}/)

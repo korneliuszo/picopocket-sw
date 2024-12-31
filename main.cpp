@@ -1,3 +1,4 @@
+
 #define _HARDWARE_UART_H
 #define _PICO_STDIO_UART_H
 
@@ -22,6 +23,7 @@
 #include <config_iface.hpp>
 #include "16550/uart_tcp_server.hpp"
 #include "audio/audio.hpp"
+#include "audio_dma.hpp"
 
 constexpr uint32_t PICO_Freq=250; //PM_SYS_CLK;
 
@@ -34,6 +36,9 @@ static void copy_optionroms(void) {
 }
 
 LWIP_TCP_16550 uart1;
+
+extern "C" volatile uint32_t __main_loop_us__;
+extern "C" volatile uint32_t __dma_isr_avail__;
 
 int main(void)
 {
@@ -69,6 +74,7 @@ int main(void)
 
 	while(1)
 	{
+		uint32_t start = time_us_32();
 		tud_task(); // tinyusb device task
 		main_thread.yield();
 		network_poll();
@@ -79,6 +85,8 @@ int main(void)
 		main_thread.yield();
 		sbdsp_poll(&main_thread);
 		main_thread.yield();
+		__main_loop_us__ = time_us_32() - start;
+		__dma_isr_avail__ = AudioDMA::AudioDMA::isr_time_taken;
 	}
 
 	return 0;

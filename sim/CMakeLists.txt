@@ -25,6 +25,7 @@ target_link_libraries(sim PRIVATE
 	ioiface
 	isa_worker
 	uart_16550
+	common
 )	
 
 target_include_directories(sim PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../)

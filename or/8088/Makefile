@@ -17,7 +17,7 @@ HEADERS_TARGETS = $(addprefix $(THIS_DIR),$(HEADERS))
 
 %.obj : ${THIS_DIR}%.S 
 	cd ${THIS_DIR}; \
-	wasm -3 -wx -ms -fo$(CURDIR)/$@ $<
+	wasm -0 -wx -ms -fo$(CURDIR)/$@ $<
 
 
 optionrom.bin: main.obj init.obj ${THIS_DIR}link.lnk

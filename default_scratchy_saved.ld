@@ -212,6 +212,11 @@ SECTIONS
     __scratch_x_source__ = LOADADDR(.scratch_x);
 
     .scratch_y : {
+        __main_loop_us__ = .;
+    	. = . + 4;
+       	__dma_isr_avail__ = .;
+    	. = . + 4;
+        . = ALIGN(4);
         __scratch_y_start__ = .;
         *(.scratch_y.*)
         . = ALIGN(4);

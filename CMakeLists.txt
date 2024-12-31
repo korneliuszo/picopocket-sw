@@ -9,6 +9,8 @@ if(${TARGET_GUS})
 	set(PICO_BOARD picogus)
 else()
 	set(WORKER isa_worker)
+	set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/picopocket-hw/boards)
+	set(PICO_BOARD board)
 endif()
 
 add_subdirectory(picopocket-hw)
@@ -23,6 +25,9 @@ add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/ne2000xt)
 if(${TARGET_GUS})
 	add_subdirectory(picogus)
 endif()
+
+add_library(common INTERFACE)
+target_include_directories(common INTERFACE ${CMAKE_CURRENT_LIST_DIR}/common)
 
 add_subdirectory(ioface)
 add_subdirectory(or)
@@ -39,7 +44,7 @@ add_executable(picopocket-sw
     ${CMAKE_CURRENT_LIST_DIR}/pico-examples/pico_w/wifi/access_point/dnsserver/dnsserver.c
 )
 
-target_compile_definitions(picopocket-sw PRIVATE
+add_compile_definitions(
 	PICO_PANIC_NO_STRINGS_ON_TARGET
 #	PICO_PANIC_FUNCTION=
 )
@@ -72,6 +77,8 @@ target_link_libraries(picopocket-sw PRIVATE
 	uart_16550
 	jmpcoro
 	audio
+	audio_dma
+	common
 )
 
 target_include_directories(picopocket-sw 

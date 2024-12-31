@@ -1,6 +1,7 @@
 #include "ioiface.hpp"
 #include "config_iface.hpp"
-#include "../config.hpp"
+
+#include "config.hpp"
 #ifndef PICOPOCKET_SIM
 #include "pico/multicore.h"
 #endif

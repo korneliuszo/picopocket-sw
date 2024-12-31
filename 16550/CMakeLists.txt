@@ -16,6 +16,7 @@ target_link_libraries(uart_16550
 	PRIVATE
 		${WORKER}
 		${OR_HWLIBS}
+		common
 )
 
-target_include_directories(uart_16550 PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../)
+target_include_directories(uart_16550 PUBLIC ${CMAKE_CURRENT_LIST_DIR}/)

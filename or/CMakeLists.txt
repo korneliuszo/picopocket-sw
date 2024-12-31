@@ -36,7 +36,8 @@ target_link_libraries(or
 		config_img
 		mbr_img
 		${OR_HWLIBS}
+		common
 	PUBLIC
 		jmpcoro
 )	
-target_include_directories(or PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../)
+target_include_directories(or PUBLIC ${CMAKE_CURRENT_LIST_DIR}/)

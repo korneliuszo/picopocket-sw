@@ -1,6 +1,7 @@
+#include "../common/config.hpp"
+
 #include "or_internal.hpp"
 #include "psram_pio.hpp"
-#include "config.hpp"
 #include "int13_handler.hpp"
 
 static volatile bool config_callback;
