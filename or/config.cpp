@@ -15,6 +15,8 @@ static bool config_decide(const volatile ENTRY_STATE & state)
 {
 	if(state.entry == 1 && state.irq_no == 0x19)
 		return true;
+	if(state.entry == 2)
+		return true;
 	if(config_callback && state.entry == 1 && state.irq_no == 0x13)
 		return true;
 	return false;
@@ -30,7 +32,7 @@ extern "C" const uint8_t _binary_config_img_start[];
 
 static void config_entry (Thread_SHM * thread)
 {
-	if(thread->params.irq_no == 0x19)
+	if(thread->params.irq_no == 0x19 || thread->params.entry == 2)
 	{
 		if(thread->params.regs.regs.rettype&0x80)
 			thread->callback_end();

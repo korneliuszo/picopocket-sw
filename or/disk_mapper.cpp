@@ -155,6 +155,8 @@ static bool disk_mapper_decide(const volatile ENTRY_STATE & state)
 		return false;
 	if(state.entry == 1 && state.irq_no == 0x19)
 		return true;
+	if(state.entry == 2)
+		return true;
 	if(disk_manager_callback && state.entry == 1 && state.irq_no == 0x13)
 		return true;
 	return false;
@@ -260,7 +262,7 @@ static uint32_t int13chain = 0;
 
 static void disk_mapper_entry (Thread_SHM * thread)
 {
-	if(thread->params.irq_no == 0x19)
+	if(thread->params.irq_no == 0x19 || thread->params.entry == 2)
 	{
 		if(thread->params.regs.regs.rettype& 0x80)
 			thread->callback_end();

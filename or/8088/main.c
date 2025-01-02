@@ -176,7 +176,13 @@ int start(uint16_t irq, IRQ_DATA far * params)
 	int lastDevice = 0;
 	unsigned port_no = port_nog;
 	uint8_t sync_counter = 0;
-	uint8_t rettype = irq == 0x00 ? 0x02 : 0x7F;
+	uint8_t rettype;
+	switch(irq)
+	{
+	case 0x00: rettype = 2; break;
+	case 0x01: rettype = 0x7f; break;
+	default: rettype = 0x00; break;
+	}
 	unsigned codeplace = (params->ph2 - (unsigned)&irqentry)/3-1; // call near takes 3 bytes
 	if(!select_next(LastID,&lastConflictZero,&lastDevice,
 			irq,

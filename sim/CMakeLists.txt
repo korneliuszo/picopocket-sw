@@ -28,4 +28,4 @@ target_link_libraries(sim PRIVATE
 	common
 )	
 
-target_include_directories(sim PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../)
+#target_include_directories(sim PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../)
