@@ -21,7 +21,8 @@ static void int19_entry (Thread_SHM * thread)
 	if(thread->params.entry == 0)
 	{
 		int19chain = thread->install_irq(0x19);
-		static const char str[] = "PicoPocket int19 installed\r\n";
+		thread->install_irq(0x18);
+		static const char str[] = "PicoPocket int18/19 installed\r\n";
 		thread->putstr(str);
 		thread->callback_end();
 	}
