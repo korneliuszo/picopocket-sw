@@ -228,6 +228,17 @@ static bool sta_enabled = false;
 void network_init()
 {
 	cyw43_arch_init_with_country(CYW43_COUNTRY_WORLDWIDE); //todo configurize country
+
+	uint dbmt4 = 4*0; //0dBm
+	uint8_t buf[9 + 4];
+	memcpy(buf, "qtxpower\x00", 9);
+	buf[9+0] = dbmt4>>0;
+	buf[9+1] = dbmt4>>8;
+	buf[9+2] = dbmt4>>16;
+	buf[9+3] = dbmt4>>24;
+	cyw43_ioctl(&cyw43_state, CYW43_IOCTL_SET_VAR, 9 + 4, buf, CYW43_ITF_STA);
+	cyw43_ioctl(&cyw43_state, CYW43_IOCTL_SET_VAR, 9 + 4, buf, CYW43_ITF_AP);
+
 	async_context * actx = cyw43_arch_async_context();
 	lwip_nosys_init(actx);
 
