@@ -384,7 +384,7 @@ public:
 		if(readout->magic == Header::magic_val)
 		{
 			Entry * entry = (Entry*)readout->entries;
-			while(entry->size != std::numeric_limits<uint32_t>::max())
+			while(entry->size < SECTOR_SIZE - (entry - (Entry*)readout->entries))
 			{
 				for(const SavedFields& ielem : SavedTable::table)
 				{
