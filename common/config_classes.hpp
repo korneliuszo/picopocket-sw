@@ -157,6 +157,39 @@ public:
 	}
 };
 
+template<typename UINT>
+class UInt_bottom{
+public:
+	UINT ival;
+	constexpr UInt_bottom(UINT defval): ival(defval){};
+	using T = UINT;
+	static constexpr std::size_t MAX_STRLEN = 12;
+	std::size_t repr(char ret[MAX_STRLEN]) const
+		{
+		snprintf(ret,MAX_STRLEN,"%u",ival);
+		return strlen(ret);
+	}
+};
+template<class CRTP, typename UINT>
+class UInt : public UInt_bottom<UINT>{
+public:
+	constexpr UInt(UINT defval): UInt_bottom<UINT>(defval){};
+	using T = UINT;
+	static constexpr std::size_t MAX_STRLEN = UInt_bottom<UINT>::MAX_STRLEN;
+
+	bool set_repr(const char* str)
+	{
+		UINT tmpval = strtoul(str,nullptr,0);
+		if(CRTP::validate(tmpval))
+		{
+			UInt_bottom<UINT>::ival = tmpval;
+			return true;
+		}
+		return false;
+	}
+};
+
+
 class IP_bottom{
 public:
 	uint32_t ival;

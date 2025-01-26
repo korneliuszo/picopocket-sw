@@ -229,7 +229,7 @@ void network_init()
 {
 	cyw43_arch_init_with_country(CYW43_COUNTRY_WORLDWIDE); //todo configurize country
 
-	uint dbmt4 = 4*0; //0dBm
+	uint dbmt4 = 4*Config::WIFI_DBM::val.ival;
 	uint8_t buf[9 + 4];
 	memcpy(buf, "qtxpower\x00", 9);
 	buf[9+0] = dbmt4>>0;

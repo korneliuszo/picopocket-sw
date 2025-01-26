@@ -30,6 +30,11 @@ using Storage = Impl::NopSaved<Ts ...>;
 		public:
 #define HEX_FIELD_END() \
 	};
+#define UINT_FIELD(uid, type, def) \
+		class uid : public Impl::CElem<uid,UID::uid,Impl::UInt<uid,type>,def> { \
+		public:
+#define UINT_FIELD_END() \
+	};
 #define IP_FIELD(uid, def) \
 		class uid : public Impl::CElem<uid,UID::uid,Impl::IP<uid>,def> { \
 		public:
