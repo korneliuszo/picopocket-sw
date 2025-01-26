@@ -228,8 +228,8 @@ void optionrom_install(Thread * main)
 #endif
 	ramdisk_install(main);
 	config_install(main);
-
-	add_device({
+	if(Config::BIOS_SEGMENT::val.ival)
+		add_device({
 					.start = (uint32_t)Config::BIOS_SEGMENT::val.ival<<4,
 					.size = (uint32_t)(_binary_optionrom_bin_end-_binary_optionrom_bin_start),
 					.type = Device::Type::MEM,
