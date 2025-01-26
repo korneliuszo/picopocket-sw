@@ -60,7 +60,7 @@ void putmem(uint8_t far * addr,unsigned len, unsigned port);
 #pragma aux putmem = \
 		"rep insb" \
 		parm [es di] [cx] [dx] \
-		modify exact [al cx di cx];
+		modify exact [al cx di];
 
 void getmem(uint8_t far * addr,unsigned len, unsigned port);
 #pragma aux getmem = \
@@ -70,7 +70,7 @@ void getmem(uint8_t far * addr,unsigned len, unsigned port);
 		"rep outsb" \
 		"pop ds" \
 		parm [cx si] [bx] [dx] \
-		modify exact [al cx si cx];
+		modify exact [al cx si];
 
 
 uint16_t axconcat(uint8_t h, uint8_t l);
