@@ -189,6 +189,7 @@ private:
 				if((dma_op_cnt-=step)<=0 && (!(dcr_reg & 0x01) || (addr&0x01)))
 				{
 					uint32_t save = spin_lock_blocking(spinlock);
+					cr_reg = 0x20 | (cr_reg&~0x38);
 					isr_reg |= 0x40; //RDC
 					spin_unlock(spinlock,save);
 					Recalculate_IRQ();
@@ -247,6 +248,7 @@ private:
 				if((dma_op_cnt-=step)<=0 && (!(dcr_reg & 0x01) || (addr&0x01)))
 				{
 					uint32_t save = spin_lock_blocking(spinlock);
+					cr_reg = 0x20 | (cr_reg&~0x38);
 					isr_reg |= 0x40; //RDC
 					spin_unlock(spinlock,save);
 					Recalculate_IRQ();
