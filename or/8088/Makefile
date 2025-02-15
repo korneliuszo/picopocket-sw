@@ -13,7 +13,7 @@ HEADERS_TARGETS = $(addprefix $(THIS_DIR),$(HEADERS))
 
 %.obj : ${THIS_DIR}%.c $(HEADERS_TARGETS)
 	cd ${THIS_DIR}; \
-	wcc -3 -wx -s -oatx -hd -d1 -ms -zu -za99 -fo$(CURDIR)/$@ $<
+	wcc -2 -wx -s -oatx -hd -d1 -ms -zu -za99 -fo$(CURDIR)/$@ $<
 
 %.obj : ${THIS_DIR}%.S 
 	cd ${THIS_DIR}; \
