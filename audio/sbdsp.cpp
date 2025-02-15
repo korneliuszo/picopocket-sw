@@ -115,7 +115,7 @@ static void write_fn(void* obj, uint32_t faddr, uint8_t data)
 		switch(sbdsp_state)
 		{
 		default:
-			__breakpoint();
+			//__breakpoint();
 			return; // should not happen
 		case State::RESET_ACK:
 			rx_avail = false;
@@ -124,7 +124,7 @@ static void write_fn(void* obj, uint32_t faddr, uint8_t data)
 			switch(data)
 			{
 			default: //not known!!
-				__breakpoint();
+				//__breakpoint();
 				return;
 			case DSP_DIRECT_DAC:
 				sbdsp_state = State::RX_DSP_DIRECT_DAC;
@@ -223,8 +223,6 @@ static void write_fn(void* obj, uint32_t faddr, uint8_t data)
 
 void sbdsp_install(Thread * main)
 {
-	AudioDMA::AudioDMA::init();
-
 	irq_hndl = IRQ_Create_Handle(5);
 
 	add_device({
@@ -298,9 +296,7 @@ void sbdsp_poll(Thread * main)
 		default:
 			break;
 		case PLAYBACK_ENGINE::STATIC:
-			dma_channel_abort(AudioDMA::AudioDMA::ping_dma_chan);
-			dma_channel_abort(AudioDMA::AudioDMA::pong_dma_chan);
-			dma_channel_abort(AudioDMA::AudioDMA::ping_dma_chan);
+			AudioDMA::AudioDMA::Static_Playback<&static_out>::stop();
 			break;
 		case PLAYBACK_ENGINE::DMA:
 			dma_playback_stop = true;
@@ -314,13 +310,7 @@ void sbdsp_poll(Thread * main)
 		default:
 			break;
 		case PLAYBACK_ENGINE::STATIC:
-			AudioDMA::AudioDMA::update_pio_frequency(384000);
-			AudioDMA::AudioDMA::setup_dma_const(
-					AudioDMA::AudioDMA::ping_dma_chan,
-					AudioDMA::AudioDMA::pong_dma_chan,
-					const_cast<uint32_t*>(&static_out)
-					);
-			dma_channel_start(AudioDMA::AudioDMA::ping_dma_chan);
+			AudioDMA::AudioDMA::Static_Playback<&static_out>::init_playback(384000);
 			break;
 		case PLAYBACK_ENGINE::DMA:
 			dma_playback_stop = false;
