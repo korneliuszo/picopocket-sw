@@ -38,9 +38,15 @@ enum class State {
 	RX_DSP_DMA_BLOCK_SIZE_HIGH,
 	TX_DSP_VERSION_MAJOR,
 	TX_DSP_VERSION_MINOR,
+	RX_IDENT,
+	TX_IDENT,
+	RX_TEST,
+	TX_TEST,
 };
 
 static State sbdsp_state;
+static uint8_t ident_byte;
+static uint8_t test_byte;
 
 static uint32_t read_fn(void* obj, uint32_t faddr)
 {
@@ -79,6 +85,16 @@ static uint32_t read_fn(void* obj, uint32_t faddr)
 			rx_avail = false;
 			tx_avail = true;
 			return DSP_VERSION_MINOR;
+		case State::TX_IDENT:
+			sbdsp_state = State::RX_CMD;
+			rx_avail = false;
+			tx_avail = true;
+			return ident_byte^0xFF;
+		case State::TX_TEST:
+			sbdsp_state = State::RX_CMD;
+			rx_avail = false;
+			tx_avail = true;
+			return test_byte;
 		}
 	}
 	default:
@@ -99,7 +115,6 @@ static volatile uint32_t block_pos;
 
 static uint8_t single_len_lo;
 static uint8_t block_size_lo;
-
 
 static void write_fn(void* obj, uint32_t faddr, uint8_t data)
 {
@@ -130,7 +145,14 @@ static void write_fn(void* obj, uint32_t faddr, uint8_t data)
 			switch(data)
 			{
 			default: //not known!!
+			{
+				volatile uint8_t val = data;
 				//__breakpoint();
+				return;
+			}
+			case 0x08: //???
+			case 0x55: //???
+			case 0xA0:
 				return;
 			case DSP_DIRECT_DAC:
 				sbdsp_state = State::RX_DSP_DIRECT_DAC;
@@ -186,11 +208,27 @@ static void write_fn(void* obj, uint32_t faddr, uint8_t data)
 			case DSP_DMA_RESUME:
 				req_playback = PLAYBACK_ENGINE::DMA;
 				return;
-			//case DSP_IDENT:
+			case DSP_IDENT:
+				sbdsp_state = State::RX_IDENT;
+				return;
 			case DSP_VERSION:
 				tx_avail = false;
 				rx_avail = true;
 				sbdsp_state = State::TX_DSP_VERSION_MAJOR;
+				return;
+			case DSP_WRITETEST:
+				sbdsp_state = State::RX_TEST;
+				return;
+			case DSP_READTEST:
+				tx_avail = false;
+				rx_avail = true;
+				sbdsp_state = State::TX_TEST;
+				return;
+			case DSP_HALT_DMA:
+				req_playback = PLAYBACK_ENGINE::NONE;
+				return;
+			case DSP_IRQ:
+				IRQ_Set(irq_hndl,true);
 				return;
 			} return;
 			case State::RX_DSP_DIRECT_DAC:
@@ -249,6 +287,20 @@ static void write_fn(void* obj, uint32_t faddr, uint8_t data)
 				sbdsp_state = State::RX_CMD;
 				return;
 			} break;
+			case State::RX_IDENT:
+			{
+				tx_avail = false;
+				rx_avail = true;
+				ident_byte = data;
+				sbdsp_state = State::TX_IDENT;
+				return;
+			} break;
+			case State::RX_TEST:
+			{
+				test_byte = data;
+				sbdsp_state = State::RX_CMD;
+				return;
+			} break;
 		}
 	}	break;
 	default:
@@ -301,6 +353,7 @@ static const int16_t* __not_in_flash_func(dma_get_buff)(size_t req_buff)
 			{
 				if(single_len-- == 0)
 				{
+					IRQ_Set(irq_hndl,true);
 					return nullptr;
 				}
 			}
@@ -335,7 +388,7 @@ static void __not_in_flash_func(tx_sample)(int16_t sample)
 		if(single_len-- == 0)
 		{
 			single_len = 0;
-			req_playback = PLAYBACK_ENGINE::NONE;
+			//req_playback = PLAYBACK_ENGINE::NONE;
 			return;
 		}
 	}

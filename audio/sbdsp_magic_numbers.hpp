@@ -46,5 +46,6 @@
 #define DSP_SINE                0xF0
 #define DSP_IRQ                 0xF2
 #define DSP_CHECKSUM            0xF4
+#define DSP_HALT_DMA            0xDA
 
 #define DSP_UNUSED_STATUS_BITS_PULLED_HIGH 0x7F
