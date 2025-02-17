@@ -19,9 +19,13 @@
 // Sound Blaster DSP commands.
 #define DSP_DMA_HS_SINGLE       0x91
 #define DSP_DMA_HS_AUTO         0x90
+#define DSP_DMA_IN_HS_SINGLE    0x99
+#define DSP_DMA_IN_HS_AUTO      0x98
 #define DSP_DMA_ADPCM           0x7F    //creative ADPCM 8bit to 3bit
 #define DSP_DMA_SINGLE          0x14    //follosed by length
+#define DSP_DMA_IN_SINGLE       0x24    //follosed by length
 #define DSP_DMA_AUTO            0X1C    //length based on 48h
+#define DSP_DMA_IN_AUTO         0X2C    //length based on 48h
 #define DSP_DMA_BLOCK_SIZE      0x48    //block size for highspeed/dma
 //#define DSP_DMA_DAC 0x14
 #define DSP_DIRECT_DAC          0x10
