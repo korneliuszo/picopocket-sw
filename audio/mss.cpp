@@ -1,6 +1,7 @@
 #include "isa_worker.hpp"
 #include "audio.hpp"
 #include "audio_dma.hpp"
+#include "audio_in.hpp"
 
 typedef struct ad1848_t {
     union {
@@ -70,6 +71,7 @@ typedef struct ad1848_t {
     bool aci;
 
     bool playing;
+    bool recording;
 
     enum class PIO_byte {
     	L_L,
@@ -368,6 +370,66 @@ static void __not_in_flash_func(isr)()
     }
 }
 
+static void __not_in_flash_func(tx_sample)(int16_t sample)
+{
+	if (ad1848.trd && !ad1848.current_count_left) {
+		return;
+	}
+
+	uint needed_data;
+	if(ad1848.regs.dform.fmt)
+	{
+		if(ad1848.regs.dform.sm)
+			needed_data=4;
+		else
+			needed_data=2;
+	}
+	else
+	{
+		if(ad1848.regs.dform.sm)
+			needed_data=2;
+		else
+			needed_data=1;
+	}
+
+	if(DMA_TX_ready_data()<needed_data)
+	{ //underrun
+		ad1848.regs.init.cor = 1;
+	}
+	else
+	{
+		ad1848.regs.init.cor = 0;
+		if(ad1848.regs.dform.fmt)
+		{
+			DMA_TX_put(sample);
+			DMA_TX_put(sample>>8);
+			if(ad1848.regs.dform.sm)
+			{
+				DMA_TX_put(sample);
+				DMA_TX_put(sample>>8);
+			}
+		}
+		else
+		{
+			DMA_TX_put((sample>>8)+0x80);
+			if(ad1848.regs.dform.sm)
+			{
+				DMA_TX_put((sample>>8)+0x80);
+			}
+		}
+	}
+
+    ad1848.current_count_left--;
+    if(!ad1848.current_count_left)
+    {
+        ad1848.irq_pending = true;
+    	if(ad1848.regs.pinc.ien)
+    		IRQ_Set(irq_hndl,true);
+    	if (!ad1848.trd)
+    		ad1848.current_count_left = ad1848.current_count;
+    }
+}
+
 void mss_poll(Thread * main)
 {
 
@@ -399,5 +461,17 @@ void mss_poll(Thread * main)
 		AudioDMA::AudioDMA::deinit();
 	}
 
+	if(!ad1848.recording && ad1848.regs.iface.cen && !ad1848.regs.iface.pen)
+	{
+		ad1848.recording = true;
+		DMA_TX_Setup();
+		AudioIn::AudioIn::Read_by_timer<tx_sample>::start(sample_rates[ad1848.regs.dform.sample]);
+	}
+	if(ad1848.recording && !ad1848.regs.iface.cen)
+	{
+		ad1848.recording = false;
+		AudioIn::AudioIn::Read_by_timer<tx_sample>::stop();
+
+	}
 
 }
