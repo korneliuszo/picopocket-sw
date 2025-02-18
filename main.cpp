@@ -62,6 +62,7 @@ int main(void)
 	install_config_iface();
 	uart1.connect(0x3F8,4,5556);
 	sbdsp_install(&main_thread);
+	mss_install(&main_thread);
 
 	ISA_Init();
 
@@ -84,6 +85,8 @@ int main(void)
 		uart1.poll();
 		main_thread.yield();
 		sbdsp_poll(&main_thread);
+		main_thread.yield();
+		mss_poll(&main_thread);
 		main_thread.yield();
 		__main_loop_us__ = time_us_32() - start;
 		__dma_isr_avail__ = AudioDMA::AudioDMA::isr_time_taken;
