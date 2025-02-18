@@ -6,6 +6,15 @@ jobs:
       env: 
         OUTPUT_DIR: ${{github.workspace}}/binaries
       steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Cache Submodules
+        id: cache-submodule
+        uses: actions/cache@v3
+        with:
+          path: |
+            .git/modules
+          key: ${{ runner.os }}-submodules
       - name: Checkout repo with submodules
         uses: actions/checkout@v4
         with:
