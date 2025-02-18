@@ -1,4 +1,5 @@
 #include "or_internal.hpp"
+#include "git.h"
 
 void int19_install(Thread * main)
 {
@@ -22,8 +23,10 @@ static void int19_entry (Thread_SHM * thread)
 	{
 		int19chain = thread->install_irq(0x19);
 		thread->install_irq(0x18);
-		static const char str[] = "PicoPocket int18/19 installed\r\n";
-		thread->putstr(str);
+		thread->putstr("PicoPocket ");
+		thread->putstr(git_Describe());
+		thread->putstr(git_AnyUncommittedChanges()?"dirty":"");
+		thread->putstr(" int18/19 installed\r\n");
 		thread->callback_end();
 	}
 	else if(int19chain && thread->params.entry == 1 && thread->params.irq_no == 0x19)

@@ -19,6 +19,14 @@ set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 
 project(picopocket-sw)
 
+include(FetchContent)
+set(GIT_IGNORE_UNTRACKED TRUE)
+FetchContent_Declare(cmake_git_version_tracking
+  GIT_REPOSITORY https://github.com/andrew-hardin/cmake-git-version-tracking.git
+  GIT_TAG 904dbda1336ba4b9a1415a68d5f203f576b696bb
+)
+FetchContent_MakeAvailable(cmake_git_version_tracking)
+
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/picow-http)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/lib/ne2000xt)
 

@@ -37,6 +37,7 @@ target_link_libraries(or
 		mbr_img
 		${OR_HWLIBS}
 		common
+		cmake_git_version_tracking
 	PUBLIC
 		jmpcoro
 )	
