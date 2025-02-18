@@ -47,6 +47,32 @@ jobs:
       - name: Upload Firmware
         uses: actions/upload-artifact@v4
         with:
-          name: PicoGUS Firmwares
+          name: picopocket-firmware
           path: ${{env.OUTPUT_DIR}}/picopocket-sw.uf2
-
+    create-release:
+      if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+      runs-on: ubuntu-22.04
+      needs: [build-firmware]
+      env: 
+        STAGING_DIR: ${{github.workspace}}/release-staging-dir
+      steps:
+        - name: Checkout repo
+          uses: actions/checkout@v4
+        - name: Get Tags
+          id: tag
+          uses: ildug/get-tag-action@v1
+        - name: Download firmware artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: picopocket-firmware
+            path: ${{env.STAGING_DIR}}
+        - name: Zip release
+          run: |
+            zip -9 -r ../picopocket-v${{ steps.tag.outputs.version }}.zip .
+          working-directory: ${{env.STAGING_DIR}}
+        - name: Release
+          uses: softprops/action-gh-release@v1
+          with:
+            body_path: release-body.md
+            files: picopocket-v${{ steps.tag.outputs.version }}.zip
+            draft: true
