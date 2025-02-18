@@ -73,6 +73,5 @@ jobs:
         - name: Release
           uses: softprops/action-gh-release@v1
           with:
-            body_path: release-body.md
             files: picopocket-v${{ steps.tag.outputs.version }}.zip
             draft: true
