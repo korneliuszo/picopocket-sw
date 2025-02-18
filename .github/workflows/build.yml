@@ -11,10 +11,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install gpref
+      - name: Install dependencies
         run: |
           sudo apt update --assume-yes
-          sudo apt install gperf
+          sudo apt install gperf python3-brotli
 
       - name: Install CMake
         uses: jwlawson/actions-setup-cmake@v2
