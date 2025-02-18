@@ -11,6 +11,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install gpref
+        run: |
+          sudo apt update --assume-yes
+          sudo apt install gperf
+
       - name: Install CMake
         uses: jwlawson/actions-setup-cmake@v2
         with:
