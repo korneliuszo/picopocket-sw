@@ -32,7 +32,6 @@ restart:
 	in pins,10                  side OPERATION_A9_A0               [0]
 	out X, 32                   side OPERATION_DATA                [0]
 	jmp !X restart              side OPERATION_DATA                [0]
-our_dev:
 .wrap
 	
 .program isa_bus_r
@@ -42,7 +41,6 @@ PUBLIC entry:
 restart:
     wait 1 gpio PIN_IOR         side OPERATION_DATA
 .wrap_target
-	nop                         side OPERATION_DATA
     wait 0 gpio PIN_IOR           ; IOW falling edge, no sideset to not conflict with other SMs
     jmp pin restart               ; if this is not during DMA (DACK deasserted), go ahead and read address
     nop                         side OPERATION_A9_A0               [2]
@@ -69,6 +67,21 @@ PUBLIC entry:
 	jmp pin retry        side 0x0
 .wrap
 
+.program dma_helper_rd
+.side_set 1
+.wrap_target
+PUBLIC entry:
+	pull                 side 0x0
+	wait 1 gpio PIN_DACK side 0x1
+	wait 0 gpio PIN_IOR  side 0x0
+	out pins, 8          side 0x0
+	mov osr, x           side 0x0
+	out pindirs, 8       side 0x0
+	wait 0 gpio PIN_DACK side 0x0
+	wait 1 gpio PIN_IOR  side 0x0
+	out pindirs, 8       side 0x0
+.wrap
+
 
 % c-sdk {
 
@@ -79,7 +92,8 @@ PUBLIC entry:
 
 #include <math.h>
 
-extern uint dma_helper_wr_offset;
+extern int dma_helper_wr_offset;
+extern int dma_helper_rd_offset;
 
 static inline int isa_pio_divisor()
 {
@@ -161,9 +175,11 @@ static inline void initialize_isa_pio(PIO isa_pio)
 	pio_sm_init(isa_pio, 1, isa_bus_r_offset + isa_bus_r_offset_entry, &isa_bus_r);
 	
 	// DMA
-
-	dma_helper_wr_offset = pio_add_program(isa_pio, &dma_helper_wr_program);
-
+	
+	// breaks on second call without deinit
+	dma_helper_wr_offset = -1;
+	dma_helper_rd_offset = -1;
+	
 	pio_gpio_init(isa_pio,PIN_DRQ);
 	gpio_set_slew_rate(PIN_DRQ, GPIO_SLEW_RATE_FAST);
 	pio_sm_set_consecutive_pindirs(isa_pio, 2, PIN_DRQ, 1, true);
@@ -178,6 +194,19 @@ static inline void initialize_dma_wr_pio(PIO isa_pio)
 
 	pio_sm_set_enabled(isa_pio,2,false);
 
+	if(dma_helper_wr_offset != -1)
+	{
+		pio_remove_program(isa_pio, &dma_helper_wr_program,dma_helper_wr_offset);
+		dma_helper_wr_offset = -1;
+	}
+	if(dma_helper_rd_offset != -1)
+	{
+		pio_remove_program(isa_pio, &dma_helper_rd_program,dma_helper_rd_offset);
+		dma_helper_rd_offset = -1;
+	}
+
+	dma_helper_wr_offset = pio_add_program(isa_pio, &dma_helper_wr_program);
+
 	pio_sm_config dma_helper = dma_helper_wr_program_get_default_config(dma_helper_wr_offset);
 	
 	sm_config_set_clkdiv_int_frac(&dma_helper, 1,0);
@@ -189,6 +218,38 @@ static inline void initialize_dma_wr_pio(PIO isa_pio)
 	sm_config_set_jmp_pin(&dma_helper,PIN_IOW);
 
 	pio_sm_init(isa_pio, 2, dma_helper_wr_offset + dma_helper_wr_offset_entry, &dma_helper);
+	pio_sm_set_enabled(isa_pio,2,true);
+}
+
+static inline void initialize_dma_rd_pio(PIO isa_pio)
+{
+	pio_sm_set_enabled(isa_pio,2,false);
+
+	if(dma_helper_wr_offset != -1)
+	{
+		pio_remove_program(isa_pio, &dma_helper_wr_program,dma_helper_wr_offset);
+		dma_helper_wr_offset = -1;
+	}
+	if(dma_helper_rd_offset != -1)
+	{
+		pio_remove_program(isa_pio, &dma_helper_rd_program,dma_helper_rd_offset);
+		dma_helper_rd_offset = -1;
+	}
+
+	dma_helper_rd_offset = pio_add_program(isa_pio, &dma_helper_rd_program);
+
+	pio_sm_config dma_helper = dma_helper_rd_program_get_default_config(dma_helper_rd_offset);
+	
+	sm_config_set_clkdiv_int_frac(&dma_helper, 1,0);
+	sm_config_set_out_shift(&dma_helper, true, true, 24);	
+	sm_config_set_out_pins(&dma_helper, PIN_AD0, 8);
+	sm_config_set_fifo_join(&dma_helper,PIO_FIFO_JOIN_TX);
+		
+	sm_config_set_sideset_pins(&dma_helper, PIN_DRQ);
+
+	pio_sm_init(isa_pio, 2, dma_helper_wr_offset + dma_helper_wr_offset_entry, &dma_helper);
+	pio_sm_drain_tx_fifo(isa_pio,2);
+	pio_sm_put(isa_pio,2,0xff0000ff);
 	pio_sm_set_enabled(isa_pio,2,true);
 }
 

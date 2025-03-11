@@ -18,8 +18,8 @@
 
 #include "isa_dma_gus.pio.h"
 
-uint dma_helper_rd_offset;
-uint dma_helper_wr_offset;
+int dma_helper_rd_offset = -1;
+int dma_helper_wr_offset = -1;
 
 #include <isa_worker.hpp>
 
@@ -75,8 +75,22 @@ bool TC_Triggered()
 
 void SetupSingleTransferTXDMA(uint dma_chan, const volatile uint8_t * buff, size_t len)
 {
+	initialize_dma_rd_pio(pio0);
+    dma_channel_config c = dma_channel_get_default_config(dma_chan);
+    channel_config_set_read_increment(&c, true);
+    channel_config_set_write_increment(&c, false);
+    channel_config_set_dreq(&c, pio_get_dreq(pio0, 1, true));
+    channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
+
+    dma_channel_configure(dma_chan, &c,
+    	&pio0->txf[2],      // Destination pointer
+		buff,               // Source pointer
+        len,                // Number of transfers
+        true                // Start immediately
+    );
+
     dma_single_transfer = true;
-	//not implemented
+	TC_triggered_val = false;
 }
 
 void SetupSingleTransferRXDMA(uint dma_chan, volatile uint8_t * buff, size_t len)
@@ -97,6 +111,41 @@ void SetupSingleTransferRXDMA(uint dma_chan, volatile uint8_t * buff, size_t len
 
     dma_single_transfer = true;
 	TC_triggered_val = false;
+}
+
+void DMA_RX_Setup()
+{
+	initialize_dma_wr_pio(pio0);
+}
+
+void DMA_TX_Setup()
+{
+	initialize_dma_rd_pio(pio0);
+}
+
+bool __not_in_flash_func(DMA_RX_is_ready)()
+{
+	return ! pio_sm_is_rx_fifo_empty(pio0,2);
+}
+
+uint __not_in_flash_func(DMA_RX_ready_data)()
+{
+	return pio_sm_get_rx_fifo_level(pio0,2);
+}
+
+uint8_t __not_in_flash_func(DMA_RX_get)()
+{
+	return pio_sm_get(pio0,2);
+}
+
+void __not_in_flash_func(DMA_TX_put)(uint8_t val)
+{
+	pio_sm_put(pio0,2,val);
+}
+
+uint __not_in_flash_func(DMA_TX_ready_data)()
+{
+	return 8-pio_sm_get_tx_fifo_level(pio0,2);
 }
 
 bool DMA_Complete(uint dma_chan)
@@ -141,14 +190,15 @@ bool add_device(const Device & device)
 		if(used_devices_io == devices_io.size())
 			return false;
 		{
+			uint16_t start = device.start&0x3ff; //up to A9 decoded
 			devices_io[used_devices_io] =
 			{
-					.start = device.start,
+					.start = start,
 					.rdfn = device.rdfn,
 					.wrfn = device.wrfn,
 					.obj = device.obj,
 			};
-			for(uint32_t page=device.start;page<device.start+device.size;page+=8)
+			for(uint32_t page=start;page<start+device.size;page+=8)
 			{
 				uint32_t idx = page>>3;
 				io_map[idx] = 1+used_devices_io;
