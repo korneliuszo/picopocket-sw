@@ -43,7 +43,7 @@ extern "C" volatile uint32_t __dma_isr_avail__;
 int main(void)
 {
 	Thread main_thread;
-
+	bool uart1_enabled=false;
 	// Overclock!
 	vreg_set_voltage(VREG_VOLTAGE_1_25);
 	sleep_ms(100);
@@ -60,7 +60,14 @@ int main(void)
 
 	IoIface::ioiface_install();
 	install_config_iface();
-	uart1.connect(0x3F8,4,5556);
+	if(Config::UART1_ADDR::val.ival)
+	{
+		uart1_enabled = true;
+		uart1.connect(
+			Config::UART1_ADDR::val.ival,
+			Config::UART1_IRQ_NOT_MACRO::val.ival,
+			Config::UART1_PORT::val.ival);
+	}
 	sbdsp_install(&main_thread);
 	mss_install(&main_thread);
 
@@ -81,8 +88,11 @@ int main(void)
 		network_poll();
 		main_thread.yield();
 		optionrom_start_worker(&main_thread);
-		main_thread.yield();
-		uart1.poll();
+		if(uart1_enabled)
+		{
+			main_thread.yield();
+			uart1.poll();
+		}
 		main_thread.yield();
 		sbdsp_poll(&main_thread);
 		main_thread.yield();
