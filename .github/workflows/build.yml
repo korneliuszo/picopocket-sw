@@ -41,6 +41,12 @@ jobs:
           version: "2.0-64"
           tag: "2024-03-01-Build"
 
+      - name: Create output dir
+        shell: bash
+        working-directory: ${{github.workspace}}
+        run: |
+          mkdir -p $OUTPUT_DIR
+        
       - name: Create Build Environment
         run: cmake -E make_directory ${{github.workspace}}/build
 
@@ -48,16 +54,27 @@ jobs:
         shell: bash
         working-directory: ${{github.workspace}}/build
         run: |
-          mkdir -p $OUTPUT_DIR
           cmake $GITHUB_WORKSPACE/ -DWATCOM_PATH="$WATCOM"
           cmake --build . --parallel $(nproc)
           cp picopocket-sw.uf2 $OUTPUT_DIR/picopocket-sw.uf2
+
+      - name: Create GUS Build Environment
+        run: cmake -E make_directory ${{github.workspace}}/build_gus
+
+      - name: Build GUS Firmware
+        shell: bash
+        working-directory: ${{github.workspace}}/build_gus
+        run: |
+          cmake $GITHUB_WORKSPACE/ -DWATCOM_PATH="$WATCOM"
+          cmake --build . --parallel $(nproc)
+          cp picopocket-sw.uf2 $OUTPUT_DIR/picopocket-gus-sw.uf2
 
       - name: Upload Firmware
         uses: actions/upload-artifact@v4
         with:
           name: picopocket-firmware
-          path: ${{env.OUTPUT_DIR}}/picopocket-sw.uf2
+          path: |
+            ${{env.OUTPUT_DIR}}/*.uf2
     create-release:
       if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
       runs-on: ubuntu-22.04
