@@ -98,10 +98,17 @@ jobs:
             path: ${{env.STAGING_DIR}}
         - name: Zip release
           run: |
-            zip -9 -r ../picopocket-v${{ steps.tag.outputs.version }}.zip .
+            unzip picopocket-firmware.zip
+            cp picopocket-firmware.zip ../picopocket-v${{ steps.tag.outputs.version }}.zip
+            cp pocket.exe ../pocket-v${{ steps.tag.outputs.version }}.exe
+            cp optionrom.bin ../optionrom-v${{ steps.tag.outputs.version }}.bin
+
           working-directory: ${{env.STAGING_DIR}}
         - name: Release
           uses: softprops/action-gh-release@v1
           with:
-            files: picopocket-v${{ steps.tag.outputs.version }}.zip
+            files: |
+              picopocket-v${{ steps.tag.outputs.version }}.zip
+              pocket-v${{ steps.tag.outputs.version }}.exe
+              optionrom-v${{ steps.tag.outputs.version }}.bin
             draft: true
