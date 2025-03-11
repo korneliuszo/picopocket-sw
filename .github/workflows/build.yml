@@ -98,10 +98,11 @@ jobs:
             path: ${{env.STAGING_DIR}}
         - name: Zip release
           run: |
-            unzip picopocket-firmware.zip
-            cp picopocket-firmware.zip ../picopocket-v${{ steps.tag.outputs.version }}.zip
+            cp picopocket-sw.uf2 ../picopocket-sw-v${{ steps.tag.outputs.version }}.uf2
+            cp picopocket-gus-sw.uf2 ../picopocket-gus-sw-v${{ steps.tag.outputs.version }}.uf2
             cp pocket.exe ../pocket-v${{ steps.tag.outputs.version }}.exe
             cp optionrom.bin ../optionrom-v${{ steps.tag.outputs.version }}.bin
+            zip -9 -r ../picopocket-v${{ steps.tag.outputs.version }}.zip .
 
           working-directory: ${{env.STAGING_DIR}}
         - name: Release
@@ -111,4 +112,6 @@ jobs:
               picopocket-v${{ steps.tag.outputs.version }}.zip
               pocket-v${{ steps.tag.outputs.version }}.exe
               optionrom-v${{ steps.tag.outputs.version }}.bin
+              picopocket-sw-v${{ steps.tag.outputs.version }}.uf2
+              picopocket-gus-sw-v${{ steps.tag.outputs.version }}.uf2
             draft: true
