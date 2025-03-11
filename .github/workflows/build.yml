@@ -67,7 +67,7 @@ jobs:
         shell: bash
         working-directory: ${{github.workspace}}/build_gus
         run: |
-          cmake $GITHUB_WORKSPACE/ -DWATCOM_PATH="$WATCOM"
+          cmake $GITHUB_WORKSPACE/ -DWATCOM_PATH="$WATCOM" -DTARGET_GUS=ON
           cmake --build . --parallel $(nproc)
           cp picopocket-sw.uf2 $OUTPUT_DIR/picopocket-gus-sw.uf2
 
