@@ -228,7 +228,7 @@ static bool sta_enabled = false;
 void network_init()
 {
 	cyw43_arch_init_with_country(CYW43_COUNTRY_WORLDWIDE); //todo configurize country
-
+	cyw43_pm_value(CYW43_NO_POWERSAVE_MODE,10,0,0,0);
 	uint dbmt4 = 4*Config::WIFI_DBM::val.ival;
 	uint8_t buf[9 + 4];
 	memcpy(buf, "qtxpower\x00", 9);
