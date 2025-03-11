@@ -83,6 +83,7 @@ int main(void)
 	while(1)
 	{
 		uint32_t start = time_us_32();
+		main_thread.yield();
 		tud_task(); // tinyusb device task
 		main_thread.yield();
 		network_poll();
@@ -97,7 +98,6 @@ int main(void)
 		sbdsp_poll(&main_thread);
 		main_thread.yield();
 		mss_poll(&main_thread);
-		main_thread.yield();
 		__main_loop_us__ = time_us_32() - start;
 		__dma_isr_avail__ = AudioDMA::AudioDMA::isr_time_taken;
 	}
