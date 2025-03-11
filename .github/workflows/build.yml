@@ -57,6 +57,8 @@ jobs:
           cmake $GITHUB_WORKSPACE/ -DWATCOM_PATH="$WATCOM"
           cmake --build . --parallel $(nproc)
           cp picopocket-sw.uf2 $OUTPUT_DIR/picopocket-sw.uf2
+          cp or/8088/optionrom.bin $OUTPUT_DIR/optionrom.bin
+          cp ../or/config/tui/pocket.exe $OUTPUT_DIR/pocket.exe
 
       - name: Create GUS Build Environment
         run: cmake -E make_directory ${{github.workspace}}/build_gus
@@ -75,6 +77,8 @@ jobs:
           name: picopocket-firmware
           path: |
             ${{env.OUTPUT_DIR}}/*.uf2
+            ${{env.OUTPUT_DIR}}/pocket.exe
+            ${{env.OUTPUT_DIR}}/optionrom.bin
     create-release:
       if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
       runs-on: ubuntu-22.04
