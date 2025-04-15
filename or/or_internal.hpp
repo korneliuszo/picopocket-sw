@@ -58,7 +58,7 @@ struct [[gnu::packed]] STACKCODE8{
 	uint8_t code[8];
 };
 
-struct Thread_SHM : public StaticThread<1024>
+struct Thread_SHM : public StaticThread<2048>
 {
 	CMD cmd;
 	volatile ENTRY_STATE params;
