@@ -35,8 +35,6 @@ static void set_dap(Thread_SHM * thread, DAP * dap)
 	thread->putmem(thread->params.regs.regs.ds,thread->params.regs.regs.si,reinterpret_cast<uint8_t*>(dap),sizeof(*dap));
 }
 
-static uint8_t ramdisk_sector[2][512];
-
 inline auto ramdisk_read(Thread_SHM * thread, uint8_t drive_no, uint32_t LBA,uint8_t *sector)
 {
 	return PSRAM::PSRAM::read_async_mem(LBA*512,sector,512);
@@ -47,6 +45,7 @@ inline auto ramdisk_write(Thread_SHM * thread, uint8_t drive_no, uint32_t LBA,ui
 	return PSRAM::PSRAM::write_async_mem(LBA*512,sector,512);
 }
 
+inline uint8_t int13_handle_sector[2][512];
 
 template<auto sread, auto swrite>
 bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
@@ -70,22 +69,22 @@ bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 		uint16_t pcaddr = thread->params.regs.regs.bx;
 		if(sectors)
 		{
-			auto cpl = sread(thread,drive_no,addr,ramdisk_sector[0]);
+			auto cpl = sread(thread,drive_no,addr,int13_handle_sector[0]);
 			for(size_t s=0;s<sectors;s+=2)
 			{
 				while(!cpl.complete_trigger())
 					thread->yield();
 				if(s+1<sectors)
-					cpl = sread(thread,drive_no,addr+1,ramdisk_sector[1]);
-				thread->putmem(thread->params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
+					cpl = sread(thread,drive_no,addr+1,int13_handle_sector[1]);
+				thread->putmem(thread->params.regs.regs.es,pcaddr,int13_handle_sector[0],512);
 				if(s+1<sectors)
 				{
 					while(!cpl.complete_trigger())
 						thread->yield();
 					addr+=2;
 					if(s+2<sectors)
-						cpl = sread(thread,drive_no,addr,ramdisk_sector[0]);
-					thread->putmem(thread->params.regs.regs.es,pcaddr+512,ramdisk_sector[1],512);
+						cpl = sread(thread,drive_no,addr,int13_handle_sector[0]);
+					thread->putmem(thread->params.regs.regs.es,pcaddr+512,int13_handle_sector[1],512);
 					pcaddr+=1024;
 				}
 			}
@@ -101,21 +100,21 @@ bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 		uint16_t pcaddr = thread->params.regs.regs.bx;
 		if(sectors)
 		{
-			thread->getmem(thread->params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
+			thread->getmem(thread->params.regs.regs.es,pcaddr,int13_handle_sector[0],512);
 			for(size_t s=0;s<sectors;s+=2)
 			{
-				auto cpl = swrite(thread,drive_no,addr,ramdisk_sector[0]);
+				auto cpl = swrite(thread,drive_no,addr,int13_handle_sector[0]);
 				if(s+1<sectors)
-					thread->getmem(thread->params.regs.regs.es,pcaddr+512,ramdisk_sector[1],512);
+					thread->getmem(thread->params.regs.regs.es,pcaddr+512,int13_handle_sector[1],512);
 				while(!cpl.complete_trigger())
 					thread->yield();
 				if(s+1<sectors)
 				{
-					cpl = swrite(thread,drive_no,addr+1,ramdisk_sector[1]);
+					cpl = swrite(thread,drive_no,addr+1,int13_handle_sector[1]);
 					addr+=2;
 					pcaddr+=1024;
 					if(s+2<sectors)
-						thread->getmem(thread->params.regs.regs.es,pcaddr,ramdisk_sector[0],512);
+						thread->getmem(thread->params.regs.regs.es,pcaddr,int13_handle_sector[0],512);
 					while(!cpl.complete_trigger())
 						thread->yield();
 				}
@@ -194,22 +193,22 @@ bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 		uint16_t pcaddr = d.off;
 		if(d.sectors)
 		{
-			auto cpl = sread(thread,drive_no,addr,ramdisk_sector[0]);
+			auto cpl = sread(thread,drive_no,addr,int13_handle_sector[0]);
 			for(size_t s=0;s<d.sectors;s+=2)
 			{
 				while(!cpl.complete_trigger())
 					thread->yield();
 				if(s+1<d.sectors)
-					cpl = sread(thread,drive_no,addr+1,ramdisk_sector[1]);
-				thread->putmem(d.seg,pcaddr,ramdisk_sector[0],512);
+					cpl = sread(thread,drive_no,addr+1,int13_handle_sector[1]);
+				thread->putmem(d.seg,pcaddr,int13_handle_sector[0],512);
 				if(s+1<d.sectors)
 				{
 					while(!cpl.complete_trigger())
 						thread->yield();
 					addr+=2;
 					if(s+2<d.sectors)
-						cpl = sread(thread,drive_no,addr,ramdisk_sector[0]);
-					thread->putmem(d.seg,pcaddr+512,ramdisk_sector[1],512);
+						cpl = sread(thread,drive_no,addr,int13_handle_sector[0]);
+					thread->putmem(d.seg,pcaddr+512,int13_handle_sector[1],512);
 					pcaddr+=1024;
 				}
 			}
@@ -225,21 +224,21 @@ bool int13_handle(Thread_SHM * thread, uint8_t drive_no,
 		uint16_t pcaddr = d.off;
 		if(d.sectors)
 		{
-			thread->getmem(d.seg,pcaddr,ramdisk_sector[0],512);
+			thread->getmem(d.seg,pcaddr,int13_handle_sector[0],512);
 			for(size_t s=0;s<d.sectors;s+=2)
 			{
-				auto cpl = swrite(thread,drive_no,addr,ramdisk_sector[0]);
+				auto cpl = swrite(thread,drive_no,addr,int13_handle_sector[0]);
 				if(s+1<d.sectors)
-					thread->getmem(d.seg,pcaddr+512,ramdisk_sector[1],512);
+					thread->getmem(d.seg,pcaddr+512,int13_handle_sector[1],512);
 				while(!cpl.complete_trigger())
 					thread->yield();
 				if(s+1<d.sectors)
 				{
-					cpl = swrite(thread,drive_no,addr+1,ramdisk_sector[1]);
+					cpl = swrite(thread,drive_no,addr+1,int13_handle_sector[1]);
 					addr+=2;
 					pcaddr+=1024;
 					if(s+2<d.sectors)
-						thread->getmem(d.seg,pcaddr,ramdisk_sector[0],512);
+						thread->getmem(d.seg,pcaddr,int13_handle_sector[0],512);
 					while(!cpl.complete_trigger())
 						thread->yield();
 				}
