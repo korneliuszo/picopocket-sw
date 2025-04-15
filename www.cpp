@@ -260,7 +260,7 @@ struct index_tree {
 	uint nesti;
 };
 
-LWIP_MEMPOOL_DECLARE(index_tree_pool, 10, sizeof(index_tree), "struct index_tree");
+LWIP_MEMPOOL_DECLARE(index_tree_pool, Config::WWW_Access::FIELD_COUNT+2, sizeof(index_tree), "struct index_tree");
 
 
 static void index_free(void *p)
@@ -359,7 +359,7 @@ static err_t tree_handler(http *http)
 					return err;
 				http_cx_set_priv(http,thr->prev,nullptr,index_continuator);
 				LWIP_MEMPOOL_FREE(index_tree_pool, thr);
-				return http->cx_priv.cnt(http);
+				return ERR_OK;
 			}
 			auto * tmp = (index_tree*)thr->prev;
 			LWIP_MEMPOOL_FREE(index_tree_pool, thr);
@@ -383,10 +383,11 @@ static err_t tree_handler(http *http)
 		thr2->nest = thr->nest+1;
 		thr2->tree_phase = 0;
 		http_cx_set_priv(http,thr2,nullptr,tree_handler);
-		return http->cx_priv.cnt(http);
+		return ERR_OK;
 	}
 	}
 	panic("buu");
+	return ERR_ARG;
 }
 
 static constexpr const char * false_true[] =
@@ -427,7 +428,7 @@ static err_t index_continuator(http *http)
 		thr2->tree_phase = 0;
 		thr2->nest = 0;
 		http_cx_set_priv(http,thr2,nullptr,tree_handler);
-		return http->cx_priv.cnt(http);
+		return ERR_OK;
 	}
 	/* no break */
 	case 1:
@@ -687,7 +688,7 @@ static err_t index_handler(struct http *http, void *p)
 	thr->elem = elem;
 
 	http_cx_set_priv(http,thr,nullptr,index_continuator);
-	return http->cx_priv.cnt(http);
+	return ERR_OK;
 }
 
 void www_init()
