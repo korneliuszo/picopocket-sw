@@ -184,7 +184,7 @@ private:
 				uint16_t i = crda_reg.w - (addr&0x01);
 				uint16_t step = 0;
 				if(!(addr&0x01))
-					step = dcr_reg & 0x01 ? 2 : 1;
+					step = (dcr_reg & 0x01) ? 2 : 1;
 				crda_reg.w+=step;
 				if((dma_op_cnt-=step)<=0 && (!(dcr_reg & 0x01) || (addr&0x01)))
 				{
