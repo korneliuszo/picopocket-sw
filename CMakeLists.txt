@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
 
-include(${CMAKE_CURRENT_LIST_DIR}/picopocket-hw/pico-sdk/pico_sdk_init.cmake)
-
 option(TARGET_GUS "Build for picogus" OFF)
 if(${TARGET_GUS})
 	set(WORKER isa_worker_gus)
@@ -13,6 +11,8 @@ else()
 	set(PICO_BOARD board)
 endif()
 
+include(${CMAKE_CURRENT_LIST_DIR}/picopocket-hw/pico-sdk/pico_sdk_init.cmake)
+
 add_subdirectory(picopocket-hw)
 
 set(CMAKE_BUILD_TYPE "RelWithDebInfo")
@@ -22,8 +22,8 @@ project(picopocket-sw)
 include(FetchContent)
 set(GIT_IGNORE_UNTRACKED TRUE)
 FetchContent_Declare(cmake_git_version_tracking
-  GIT_REPOSITORY https://github.com/andrew-hardin/cmake-git-version-tracking.git
-  GIT_TAG 904dbda1336ba4b9a1415a68d5f203f576b696bb
+  GIT_REPOSITORY https://github.com/martonmiklos/cmake-git-version-tracking
+  GIT_TAG 3b792b2d68f85a1e88210ada8a86fd2aa0ece14e
 )
 FetchContent_MakeAvailable(cmake_git_version_tracking)
 
@@ -71,13 +71,22 @@ pico_set_binary_type(picopocket-sw default)
 pico_set_linker_script(picopocket-sw ${CMAKE_CURRENT_LIST_DIR}/default_scratchy_saved.ld)
 pico_add_extra_outputs(picopocket-sw)
 
+pico_add_library(pico_cyw43_arch_noirq NOFLAG)
+pico_mirrored_target_link_libraries(pico_cyw43_arch_noirq INTERFACE
+        pico_cyw43_arch
+        pico_async_context_poll)
+target_compile_definitions(pico_cyw43_arch_noirq_headers INTERFACE
+        CYW43_LWIP=0
+        PICO_CYW43_ARCH_POLL=1 # none still uses threadsafe_background to make gpio use easy
+)
+
 target_link_libraries(picopocket-sw PRIVATE
 	${WORKER}
 	hardware_flash
 	hardware_sync
 	tinyusb_device
 	tinyusb_board
-	pico_cyw43_arch_none
+	pico_cyw43_arch_noirq
 	pico_lwip_nosys
 	picow_http
 	or
