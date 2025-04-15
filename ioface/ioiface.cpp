@@ -1,7 +1,7 @@
 #include "ioiface.hpp"
 #include "isa_worker.hpp"
 #ifndef PICOPOCKET_SIM
-#include "pico/platform.h"
+#include "pico.h"
 #include "pico/unique_id.h"
 #include <cstring>
 #endif
