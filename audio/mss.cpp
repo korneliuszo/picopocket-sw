@@ -61,7 +61,7 @@ typedef struct ad1848_t {
             uint8_t lbase; // 15
         };
         uint8_t idx[16];
-    } regs;
+    } volatile regs;
 
     uint8_t idx_addr;   // Register index address
     bool irq_pending;
@@ -84,8 +84,8 @@ typedef struct ad1848_t {
     uint32_t ppio_sample;
     PIO_byte ppio_sample_state;
 
-    uint16_t current_count;
-    uint16_t current_count_left;
+    volatile uint16_t current_count;
+    volatile uint16_t current_count_left;
 } ad1848_t;
 
 static ad1848_t ad1848 = {
@@ -339,7 +339,7 @@ static void __not_in_flash_func(isr)()
 		}
 		else
 		{
-			sample = ((int16_t)DMA_RX_get())-0x80;
+			sample = (uint16_t)(DMA_RX_get()-0x80)<<8;
 		}
 		if(ad1848.regs.dform.sm)
 		{
@@ -351,7 +351,7 @@ static void __not_in_flash_func(isr)()
 			}
 			else
 			{
-				sample |= (((int16_t)DMA_RX_get())-0x80)<<16;
+				sample |= (uint16_t)(DMA_RX_get()-0x80)<<24;
 			}
 		}
 		else
@@ -372,6 +372,7 @@ static void __not_in_flash_func(isr)()
 
 static void __not_in_flash_func(tx_sample)(int16_t sample)
 {
+
 	if (ad1848.trd && !ad1848.current_count_left) {
 		return;
 	}
@@ -395,6 +396,11 @@ static void __not_in_flash_func(tx_sample)(int16_t sample)
 	if(DMA_TX_ready_data()<needed_data)
 	{ //underrun
 		ad1848.regs.init.cor = 1;
+		if (!ad1848.regs.iface.cen)
+		{
+			ad1848.recording = false;
+			AudioIn::AudioIn::Read_by_timer<tx_sample>::stop();
+		}
 	}
 	else
 	{
@@ -467,11 +473,4 @@ void mss_poll(Thread * main)
 		DMA_TX_Setup();
 		AudioIn::AudioIn::Read_by_timer<tx_sample>::start(sample_rates[ad1848.regs.dform.sample]);
 	}
-	if(ad1848.recording && !ad1848.regs.iface.cen)
-	{
-		ad1848.recording = false;
-		AudioIn::AudioIn::Read_by_timer<tx_sample>::stop();
-
-	}
-
 }
