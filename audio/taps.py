@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+import sympy
+import numpy as np
+import math
+import more_itertools
+
+x = sympy.symbols('x')
+flts = sympy.cos(sympy.pi*x/12)**2*sympy.sin(sympy.pi*x/2)/(sympy.pi*x)
+
+fltw0 =  sympy.Piecewise((flts,((x>=-6)&(x<=6))),(0,True))
+fltw1 = fltw0.diff()/sympy.factorial(1)
+fltw2 = fltw0.diff().diff()/sympy.factorial(2)
+fltw3 = fltw0.diff().diff().diff()/sympy.factorial(3)
+
+if True:
+    f0 = sympy.lambdify(x, fltw0, "numpy")
+    flt0 = [q for q in np.nan_to_num(f0(np.array(range(-6,7))),nan=float(fltw0.limit(x,0)))]
+    f1 = sympy.lambdify(x, fltw1, "numpy")
+    flt1 = [q for q in np.nan_to_num(f1(np.array(range(-6,7))),nan=float(fltw1.limit(x,0)))]
+    f2 = sympy.lambdify(x, fltw2, "numpy")
+    flt2 = [q for q in np.nan_to_num(f2(np.array(range(-6,7))),nan=float(fltw2.limit(x,0)))]
+    f3 = sympy.lambdify(x, fltw3, "numpy")
+    flt3 = [q for q in np.nan_to_num(f3(np.array(range(-6,7))),nan=float(fltw3.limit(x,0)))]
+
+import sys
+
+f=open(sys.argv[1],'w')
+
+f.write(f"""
+#pragma once
+#include <array>
+
+static constexpr std::array<int32_t,13*4> fir_coeff = 
+{{
+    {", ".join((str(int(q*(1<<15))) for q in more_itertools.interleave(flt0,flt1,flt2,flt3)))}
+}};
+
+""")

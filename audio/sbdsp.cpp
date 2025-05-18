@@ -7,6 +7,7 @@
 #include "audio_in.hpp"
 #include "fifo.hpp"
 #include "audio.hpp"
+#include "resampler.hpp"
 #include <atomic>
 
 static bool rx_avail;
@@ -327,53 +328,34 @@ void sbdsp_install(Thread * main)
 
 static std::atomic<bool> dma_playback_stop;
 
-static const int16_t* __not_in_flash_func(dma_get_buff)(size_t req_buff)
+static int16_t __not_in_flash_func(read_in)()
 {
-	if(dma_playback_stop)
-		return nullptr;
-	static int16_t buff[2][AudioDMA::AudioDMA::DMA_BYTE_LEN/2];
-	static size_t curr_buff;
-	if(++curr_buff>=2)
-		curr_buff = 0;
-
-	for(int i=0;i<AudioDMA::AudioDMA::DMA_BYTE_LEN/2;i+=2)
-	{
-		static int16_t sample;
-		static uint32_t frac=0;
-		static uint32_t block;
-		if((frac+=1000)>=decimationx1000)
-		{
-			frac-=decimationx1000;
-			if(++block >= block_size)
-			{
-				block = 0;
-				IRQ_Set(irq_hndl,true);
-			}
-			if(single_mode)
-			{
-				if(single_len-- == 0)
-				{
-					IRQ_Set(irq_hndl,true);
-					return nullptr;
-				}
-			}
-			if(DMA_RX_is_ready())
-			{
-				sample =
-						((static_cast<int16_t>(DMA_RX_get())<<8)+(-0x8000));
-			}
-			else
-			{
-				//underflow
-			}
-		}
-		buff[curr_buff][i] = buff[curr_buff][i+1] = sample;
+	static uint32_t block;
+	if (++block >= block_size) {
+		block = 0;
+		IRQ_Set(irq_hndl, true);
 	}
-
-	return buff[curr_buff];
+	if (single_mode) {
+		if (single_len-- == 0) {
+			IRQ_Set(irq_hndl, true);
+			req_playback = PLAYBACK_ENGINE::NONE;
+		}
+	}
+	if(DMA_RX_is_ready())
+		return ((static_cast<int16_t>(DMA_RX_get())<<8)+(-0x8000));
+	return 0;
 }
 
-using dma_playback = AudioDMA::AudioDMA::GetbuffISR_playback<&dma_get_buff>;
+static Resampler<read_in> resampler;
+
+void __not_in_flash_func(isr)()
+{
+	volatile PIO pio = pio1;
+	int16_t sample = resampler.get_sample();
+	uint16_t s2=sample;
+	uint32_t s3=s2;
+	pio_sm_put(pio,AudioDMA::AudioDMA::pio_sm, s3|(s3<<16));
+}
 
 static void __not_in_flash_func(tx_sample)(int16_t sample)
 {
@@ -410,8 +392,9 @@ void sbdsp_poll(Thread * main)
 			break;
 		case PLAYBACK_ENGINE::DMA:
 			dma_playback_stop = true;
-			if(!dma_playback::is_complete())
-				return;
+		    irq_set_enabled(PIO1_IRQ_1, false);
+	    	irq_remove_handler(PIO1_IRQ_1,isr);
+			AudioDMA::AudioDMA::deinit();
 			break;
 		case PLAYBACK_ENGINE::IN_STATIC:
 			AudioIn::AudioIn::Read_by_call::stop();
@@ -431,7 +414,14 @@ void sbdsp_poll(Thread * main)
 		case PLAYBACK_ENGINE::DMA:
 			dma_playback_stop = false;
 			DMA_RX_Setup();
-			dma_playback::init_playback(384000);
+			AudioDMA::AudioDMA::init();
+			AudioDMA::AudioDMA::update_pio_frequency(192000);
+			resampler.set_ratio(samplerate,192000);
+	    	irq_add_shared_handler(PIO1_IRQ_1, isr, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY); // Add a shared IRQ handler
+		    irq_set_enabled(PIO1_IRQ_1, true); // Enable the IRQ
+		    pio_set_irqn_source_enabled(pio1, 1,
+		    		(pio_interrupt_source)((uint)pis_sm0_tx_fifo_not_full+AudioDMA::AudioDMA::pio_sm), true); // Set pio to tell us when the FIFO is NOT full
+
 			break;
 		case PLAYBACK_ENGINE::IN_STATIC:
 			AudioIn::AudioIn::Read_by_call::start();
