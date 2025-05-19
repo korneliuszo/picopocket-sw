@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update --assume-yes
-          sudo apt install gperf python3-brotli mtools python3-numpy python3-scipy
+          sudo apt install gperf python3-brotli mtools python3-numpy python3-scipy python3-sympy
 
       - name: Install CMake
         uses: jwlawson/actions-setup-cmake@v2
