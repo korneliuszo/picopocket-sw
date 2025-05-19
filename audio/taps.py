@@ -25,6 +25,26 @@ if True:
 
 import sys
 
+print(sum((abs(_) for _ in flt0)))
+print(sum((abs(_) for _ in flt1)))
+print(sum((abs(_) for _ in flt2)))
+print(sum((abs(_) for _ in flt3)))
+
+maxsignal = \
+(sum((abs(sum(_)) for _ in zip(flt0, \
+    list(_/2 for _ in flt1), \
+    list(_/4 for _ in flt2), \
+    list(_/8 for _ in flt3) \
+    ))))
+
+print(maxsignal)
+
+assert(sum(flt0)<2)
+assert(sum(flt1)<2)
+assert(sum(flt2)<1)
+assert(sum(flt3)<1)
+assert(maxsignal<2)
+
 f=open(sys.argv[1],'w')
 
 f.write(f"""
