@@ -243,7 +243,7 @@ static void write_fn(void* obj, uint32_t faddr, uint8_t data)
 			} break;
 			case State::RX_DSP_SET_TIME_CONSTANT:
 			{
-				decimationx1000 = 384*(256-data);
+				decimationx1000 = 192*(256-data);
 				samplerate = 1000000/(256-data);
 				sbdsp_state = State::RX_CMD;
 				return;
@@ -326,8 +326,6 @@ void sbdsp_install(Thread * main)
 }
 
 
-static std::atomic<bool> dma_playback_stop;
-
 static int16_t __not_in_flash_func(read_in)()
 {
 	static uint32_t block;
@@ -370,7 +368,7 @@ static void __not_in_flash_func(tx_sample)(int16_t sample)
 		if(single_len-- == 0)
 		{
 			single_len = 0;
-			//req_playback = PLAYBACK_ENGINE::NONE;
+			req_playback = PLAYBACK_ENGINE::NONE;
 			return;
 		}
 	}
@@ -391,7 +389,8 @@ void sbdsp_poll(Thread * main)
 			AudioDMA::AudioDMA::Static_Playback<&static_out>::stop();
 			break;
 		case PLAYBACK_ENGINE::DMA:
-			dma_playback_stop = true;
+			if(DMA_RX_is_ready())
+				return;
 		    irq_set_enabled(PIO1_IRQ_1, false);
 	    	irq_remove_handler(PIO1_IRQ_1,isr);
 			AudioDMA::AudioDMA::deinit();
@@ -412,11 +411,10 @@ void sbdsp_poll(Thread * main)
 			AudioDMA::AudioDMA::Static_Playback<&static_out>::init_playback(384000);
 			break;
 		case PLAYBACK_ENGINE::DMA:
-			dma_playback_stop = false;
 			DMA_RX_Setup();
 			AudioDMA::AudioDMA::init();
 			AudioDMA::AudioDMA::update_pio_frequency(192000);
-			resampler.set_ratio(samplerate,192000);
+			resampler.set_ratio(1000,decimationx1000);
 	    	irq_add_shared_handler(PIO1_IRQ_1, isr, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY); // Add a shared IRQ handler
 		    irq_set_enabled(PIO1_IRQ_1, true); // Enable the IRQ
 		    pio_set_irqn_source_enabled(pio1, 1,

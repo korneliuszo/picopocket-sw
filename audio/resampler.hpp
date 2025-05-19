@@ -7,7 +7,7 @@
 
 template<int16_t (*IN_FN)()>
 class Resampler {
-	int64_t phase; //in 32.32
+	int64_t phase; //in 31.32
 	uint64_t ratio;
 	std::size_t fir_pos;
 	int16_t fir[13];
@@ -20,12 +20,12 @@ public:
 	}
 	int16_t get_sample()
 	{
-		phase+=ratio;
-		while(phase>=1UL<<31) //0.5
+		phase-=ratio;
+		while(phase<=1UL<<31) //0.5
 		{
 			fir[fir_pos]=IN_FN(); //0.15
 			fir_pos++;
-			phase-=1ULL<<32;
+			phase+=1ULL<<32;
 			if(fir_pos>=13)
 				fir_pos=0;
 
@@ -101,8 +101,14 @@ public:
 			c2=lc2>>15;
 			c3=lc3>>15;
 		};
-		int16_t lphase = phase>>17; //0.15
-		int32_t val = (c0 + (lphase*(c1 + (lphase*(c2 + (lphase*(c3)>>15))>>15))>>15));
+		int32_t lphase = phase>>17; //0.15
+		int32_t val = (c0 +
+				((lphase*(c1 +
+						((lphase*(c2 +
+								((lphase*(c3))>>15)
+								))>>15)
+								))>>15)
+								);
 		return val;
 	}
 };
