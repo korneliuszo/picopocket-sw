@@ -334,7 +334,7 @@ static int16_t __not_in_flash_func(read_in)()
 		IRQ_Set(irq_hndl, true);
 	}
 	if (single_mode) {
-		if (single_len-- == 0) {
+		if (single_len-- == DMA_RX_ready_data()) {
 			IRQ_Set(irq_hndl, true);
 			req_playback = PLAYBACK_ENGINE::NONE;
 		}
