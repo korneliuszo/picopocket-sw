@@ -20,12 +20,12 @@ public:
 	}
 	int16_t get_sample()
 	{
-		phase-=ratio;
-		while(phase<=1UL<<31) //0.5
+		phase+=ratio;
+		while(phase>=1UL<<31) //0.5
 		{
 			fir[fir_pos]=IN_FN(); //0.15
 			fir_pos++;
-			phase+=1ULL<<32;
+			phase-=1ULL<<32;
 			if(fir_pos>=13)
 				fir_pos=0;
 

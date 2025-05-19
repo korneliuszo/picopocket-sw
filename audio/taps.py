@@ -33,7 +33,7 @@ f.write(f"""
 
 static constexpr std::array<int32_t,13*4> fir_coeff = 
 {{
-    {", ".join((str(int(q*(1<<15))) for q in more_itertools.interleave(flt0,flt1,flt2,flt3)))}
+    {", ".join((str(int(q*(1<<15))) for q in more_itertools.interleave(flt0[::-1],flt1[::-1],flt2[::-1],flt3[::-1])))}
 }};
 
 """)
