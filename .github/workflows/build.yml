@@ -32,7 +32,7 @@ jobs:
           cache: 'pip' # caching pip dependencies
 
       - name: Install python3-packages
-        run: pip install numpy sympy more-itertools brotli PyYAML
+        run: pip install numpy sympy more-itertools brotli PyYAML Jinja2
 
       - name: Install CMake
         uses: jwlawson/actions-setup-cmake@v2
