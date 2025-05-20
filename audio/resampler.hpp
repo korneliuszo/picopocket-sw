@@ -96,18 +96,18 @@ public:
 			, [FIR_SPLIT2]"+r"(fir_split2)
 			, [INP2]"+r"(inp2)
 			);
-			c0=lc0; // maxsignal 2. tap 2.
+			c0=lc0; // maxsignal 2.30 tap 2.
 			c1=lc1>>(30-14); // tap 2.30 -> 2.14
 			c2=lc2>>15; // tap 1.30 -> 1.15
 			c3=lc3>>15; // tap 1.30 -> 1.15
 		};
-		int32_t lphase = phase>>17; //0.15
+		int32_t lphase = phase>>16; //-1.16
 		int32_t val = (c0 +
 				((lphase*(c1 +
 						((lphase*(c2 +
-								((lphase*(c3))>>15)
-								))>>15)
-								))>>14)
+								((lphase*(c3))>>(16+15-15)) //1.15
+								))>>(16+15-14)) //2.14
+								))>>(16+14-30)) //2.30
 								);
 		return val>>16;
 	}
